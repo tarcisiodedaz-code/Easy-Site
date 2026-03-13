@@ -1,0 +1,57 @@
+========================================
+  ENVIAR ALTERACOES PARA O GITHUB
+  (para a Vercel pegar o codigo novo)
+========================================
+
+IMPORTANTE: "Fetch" so BAIXA do GitHub. A Vercel usa o que
+esta NO GitHub. Por isso voce precisa ENVIAR (push) seu codigo.
+
+----------------------------------------
+PASSO A PASSO (no Cursor ou no GitHub Desktop)
+----------------------------------------
+
+OPCAO A - Usando o Cursor (terminal integrado)
+----------------------------------------------
+1. Abra o Cursor na pasta do projeto:
+   C:\Users\tarci\Documents\Easy Site
+
+2. Abra o terminal (menu Terminal > New Terminal, ou Ctrl+')
+
+3. Rode estes comandos UM POR VEZ (copie e cole, depois Enter):
+
+   git add .
+
+   git status
+
+   git commit -m "Corrigir build Vercel - Supabase placeholder"
+
+   git push origin main
+
+4. Se pedir usuario/senha do GitHub, use seu login ou um
+   "Personal Access Token" (em GitHub > Settings > Developer settings).
+
+5. Depois do push, a Vercel costuma fazer o deploy sozinha.
+   Se nao fizer, entre no site da Vercel e clique em "Redeploy".
+
+
+OPCAO B - Usando o GitHub Desktop
+----------------------------------
+1. Abra o GitHub Desktop.
+
+2. Ele deve mostrar que ha arquivos alterados (lista na esquerda).
+
+3. Em "Summary" (resumo), escreva: Corrigir build Vercel
+
+4. Clique no botao azul "Commit to main".
+
+5. Clique no botao "Push origin" (ou "Push" no topo) para ENVIAR
+   as alteracoes para o GitHub.
+
+6. Pronto. A Vercel vai usar o codigo novo no proximo deploy.
+
+========================================
+Se der erro no "git push" (ex.: rejeitado ou sem permissao):
+- Confira se esta logado no GitHub no Cursor ou no GitHub Desktop.
+- O nome do repositorio no GitHub deve ser o mesmo (ex.: Easy-Site).
+- Se tiver "branch" diferente de main, troque para: git push origin main
+========================================
