@@ -10,7 +10,7 @@ import { StoreNav } from "./StoreNav";
 const WHATSAPP_NUMERO = "5579999204322";
 const WHATSAPP_MSG = "Olá! Vim pelo site e gostaria de mais informações.";
 
-const SCROLL_THRESHOLD = 50;
+const SCROLL_THRESHOLD = 80;
 
 function IconLupa() {
   return (
@@ -44,14 +44,45 @@ function IconCarrinho() {
   );
 }
 
-function IconJoystick() {
+function IconJoystick({ compact }: { compact?: boolean }) {
   return (
-    <svg className="h-11 w-11 shrink-0 sm:h-12 sm:w-12 md:h-14 md:w-14" viewBox="0 0 40 40" fill="none" aria-hidden>
+    <svg 
+      className={`shrink-0 transition-all duration-300 ${
+        compact 
+          ? "h-8 w-8 sm:h-9 sm:w-9" 
+          : "h-11 w-11 sm:h-12 sm:w-12 md:h-14 md:w-14"
+      }`} 
+      viewBox="0 0 40 40" 
+      fill="none" 
+      aria-hidden
+    >
       <path
         d="M20 4c-2 4-6 8-10 10 2 2 4 4 4 8 0 4-2 8-6 10 4-2 8-4 10-8 2 4 6 6 10 6 0-4 2-8 6-10-4-2-8-4-10-8 2-4 6-8 10-10z"
         fill="#22c55e"
       />
     </svg>
+  );
+}
+
+function IconHamburger({ isOpen }: { isOpen: boolean }) {
+  return (
+    <div className="relative h-5 w-5">
+      <span
+        className={`absolute left-0 block h-0.5 w-5 bg-white transition-all duration-300 ${
+          isOpen ? "top-2 rotate-45" : "top-0.5"
+        }`}
+      />
+      <span
+        className={`absolute left-0 top-2 block h-0.5 w-5 bg-white transition-all duration-300 ${
+          isOpen ? "opacity-0" : "opacity-100"
+        }`}
+      />
+      <span
+        className={`absolute left-0 block h-0.5 w-5 bg-white transition-all duration-300 ${
+          isOpen ? "top-2 -rotate-45" : "top-3.5"
+        }`}
+      />
+    </div>
   );
 }
 
@@ -65,7 +96,8 @@ export function StoreHeader() {
   const { count, total } = useCart();
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null);
-  const [navVisible, setNavVisible] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [navForceOpen, setNavForceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(() => {
     if (typeof window === "undefined") return null;
@@ -92,15 +124,16 @@ export function StoreHeader() {
   useEffect(() => {
     function handleScroll() {
       const current = window.scrollY;
-      if (current <= SCROLL_THRESHOLD) {
-        setNavVisible(true);
-      } else if (current > lastScrollY.current) {
-        setNavVisible(false);
-      } else {
-        setNavVisible(true);
+      const scrolledNow = current > SCROLL_THRESHOLD;
+      setIsScrolled(scrolledNow);
+      
+      if (!scrolledNow) {
+        setNavForceOpen(false);
       }
+      
       lastScrollY.current = current;
     }
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -130,45 +163,78 @@ export function StoreHeader() {
     else router.push("/#ofertas");
   }
 
+  function toggleNav() {
+    setNavForceOpen((prev) => !prev);
+  }
+
   const displayName = user?.full_name?.trim() || user?.email?.split("@")[0] || "Conta";
+
+  // Logo fica compacta quando scrolled E menu não está aberto
+  const isCompact = isScrolled && !navForceOpen;
+  
+  // Barra de navegação aparece se não está scrolled OU se o menu foi aberto manualmente
+  const showNav = !isScrolled || navForceOpen;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 w-full bg-zinc-950">
-      {/* Container alinhado à vitrine: mesmo max-w e padding (Lançamentos, grid de produtos) */}
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-5 sm:px-6">
-        {/* Bloco esquerdo: Logo + Busca (distribuição proporcional até o bloco direito) */}
+        {/* Bloco esquerdo: Logo + Hamburger + Busca */}
         <div className="flex min-w-0 flex-1 items-center gap-6 sm:gap-8">
+          {/* Logo com animação de tamanho */}
           <Link
             href="/"
             className="flex shrink-0 items-center gap-3 transition-opacity hover:opacity-90"
             aria-label="Easy Games - Início"
           >
             {publicConfig === null ? (
-              /* Enquanto carrega a config: placeholder do mesmo tamanho para não mostrar a logo antiga */
               <div
-                className="h-12 w-[140px] shrink-0 animate-pulse rounded bg-zinc-800 sm:h-14 sm:w-[180px] md:h-16 md:w-[220px]"
+                className={`shrink-0 animate-pulse rounded bg-zinc-800 transition-all duration-300 ${
+                  isCompact
+                    ? "h-8 w-[100px] sm:h-9 sm:w-[120px]"
+                    : "h-12 w-[140px] sm:h-14 sm:w-[180px] md:h-16 md:w-[220px]"
+                }`}
                 aria-hidden
               />
             ) : publicConfig?.logo_marca?.url ? (
               <img
                 src={publicConfig.logo_marca.url}
                 alt="Easy Games"
-                className="h-12 w-auto max-w-[220px] object-contain object-left sm:h-14 sm:max-w-[280px] md:h-16 md:max-w-[320px]"
+                className={`w-auto object-contain object-left transition-all duration-300 ${
+                  isCompact
+                    ? "h-8 max-w-[120px] sm:h-9 sm:max-w-[140px]"
+                    : "h-12 max-w-[220px] sm:h-14 sm:max-w-[280px] md:h-16 md:max-w-[320px]"
+                }`}
                 width={320}
                 height={80}
               />
             ) : (
               <>
-                <IconJoystick />
+                <IconJoystick compact={isCompact} />
                 <span className="flex flex-col leading-tight">
-                  <span className="text-2xl font-bold text-white sm:text-2xl md:text-3xl">EASY</span>
-                  <span className="text-2xl font-bold text-white sm:text-2xl md:text-3xl">GAMES</span>
+                  <span className={`font-bold text-white transition-all duration-300 ${
+                    isCompact ? "text-lg sm:text-xl" : "text-2xl sm:text-2xl md:text-3xl"
+                  }`}>EASY</span>
+                  <span className={`font-bold text-white transition-all duration-300 ${
+                    isCompact ? "text-lg sm:text-xl" : "text-2xl sm:text-2xl md:text-3xl"
+                  }`}>GAMES</span>
                 </span>
               </>
             )}
           </Link>
 
-          {/* Barra de busca – ocupa o centro de forma mais imponente */}
+          {/* Botão Hamburger - aparece quando scrolled */}
+          <button
+            type="button"
+            onClick={toggleNav}
+            className={`flex items-center justify-center rounded-lg p-2 transition-all duration-300 hover:bg-zinc-800 ${
+              isScrolled ? "scale-100 opacity-100" : "pointer-events-none w-0 scale-0 opacity-0"
+            }`}
+            aria-label={navForceOpen ? "Fechar menu" : "Abrir menu"}
+          >
+            <IconHamburger isOpen={navForceOpen} />
+          </button>
+
+          {/* Barra de busca - sem animação, como era antes */}
           <form
             onSubmit={handleSearch}
             className="flex min-w-0 flex-1 items-center sm:max-w-[580px] lg:max-w-[640px]"
@@ -187,7 +253,7 @@ export function StoreHeader() {
           </form>
         </div>
 
-        {/* Bloco direito: Atendimento + Login + Carrinho (até o limite do grid) */}
+        {/* Bloco direito: Atendimento + Login + Carrinho */}
         <div className="flex shrink-0 items-center gap-4 sm:gap-6">
           <a
             href={`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(WHATSAPP_MSG)}`}
@@ -254,12 +320,11 @@ export function StoreHeader() {
 
       {/* Navegação inferior (Gift Card, PlayStation 5, etc.) */}
       <div
-        className={`relative transition-all duration-300 ${navVisible ? "overflow-visible" : "overflow-hidden"}`}
-        style={{ height: navVisible ? "3.5rem" : "0" }}
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          showNav ? "max-h-14 opacity-100" : "max-h-0 opacity-0"
+        }`}
       >
-        <div className={`absolute left-0 right-0 transition-all duration-300 ${navVisible ? "top-0" : "-top-20"}`}>
-          <StoreNav />
-        </div>
+        <StoreNav />
       </div>
     </header>
   );

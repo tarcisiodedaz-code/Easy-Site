@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-export type SituacaoPedido = "pendente" | "pago" | "cancelado" | "entregue" | "rejeitado";
+export type SituacaoPedido = "pendente" | "pago" | "entregue" | "cancelado" | "rejeitado";
 export type FormaPagamento = "mercado_pago" | "pix";
 
 export type Pedido = {
@@ -144,7 +144,7 @@ export async function atualizarSituacaoPedido(id: string, situacao: SituacaoPedi
 export async function marcarEmailEnviado(id: string) {
   const { error } = await supabase
     .from("pedidos")
-    .update({ email_enviado_em: new Date().toISOString(), situacao: "entregue" })
+    .update({ email_enviado_em: new Date().toISOString() })
     .eq("id", id);
   return !error;
 }

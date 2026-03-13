@@ -241,6 +241,7 @@ export function CheckoutContent() {
             nome={nome}
             cpf={cpf.replace(/\D/g, "")}
             onSuccess={(token, installments) => handleCartao(token, installments)}
+            onError={(msg) => setErro(msg)}
             loading={loading}
           />
         ) : (
@@ -402,12 +403,14 @@ function CheckoutCardForm({
   nome,
   cpf,
   onSuccess,
+  onError,
   loading,
 }: {
   total: number;
   nome: string;
   cpf: string;
   onSuccess: (token: string, installments: number) => void;
+  onError: (msg: string) => void;
   loading: boolean;
 }) {
   const [scriptOk, setScriptOk] = useState(false);
@@ -418,6 +421,7 @@ function CheckoutCardForm({
   const [expYear, setExpYear] = useState("");
   const [cvv, setCvv] = useState("");
   const [installments, setInstallments] = useState(1);
+  const [tokenizing, setTokenizing] = useState(false);
 
   useEffect(() => {
     setCardName(nome);
@@ -449,25 +453,53 @@ function CheckoutCardForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!publicKey || !window.MercadoPago) return;
-    const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
-    const [month, year] = expMonth.split("/").map((s) => s.trim());
-    const yearFull = year?.length === 2 ? `20${year}` : (year || "2030");
+    if (!publicKey || !window.MercadoPago) {
+      onError("SDK do Mercado Pago não carregado.");
+      return;
+    }
+    
+    setTokenizing(true);
+    
     try {
+      const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
+      const [month, year] = expMonth.split("/").map((s) => s.trim());
+      const yearFull = year?.length === 2 ? `20${year}` : (year || "2030");
+      const cardNum = cardNumber.replace(/\D/g, "");
+      const cpfNum = cpf.replace(/\D/g, "") || "12345678909";
+      
       const result = await mp.createCardToken({
-        cardNumber: cardNumber.replace(/\D/g, ""),
-        cardholderName: cardName,
-        cardExpirationMonth: month || "01",
+        cardNumber: cardNum,
+        cardholderName: cardName.toUpperCase(),
+        cardExpirationMonth: month || "11",
         cardExpirationYear: yearFull,
         securityCode: cvv.replace(/\D/g, ""),
         identificationType: "CPF",
-        identificationNumber: cpf.replace(/\D/g, "") || "12345678909",
+        identificationNumber: cpfNum,
       });
+      
       if (result?.id) {
         onSuccess(result.id, installments);
+      } else {
+        onError("Não foi possível tokenizar o cartão. Verifique os dados.");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erro ao gerar token:", err);
+      const errorObj = err as { message?: string; cause?: Array<{ code?: string; description?: string }> };
+      const cause = errorObj?.cause?.[0];
+      if (cause?.code) {
+        const errorMessages: Record<string, string> = {
+          "bin_not_found": "Cartão não reconhecido. Use um cartão válido ou de teste do Mercado Pago.",
+          "invalid_card_number": "Número do cartão inválido.",
+          "invalid_expiration_date": "Data de validade inválida.",
+          "invalid_security_code": "CVV inválido.",
+          "invalid_cardholder_name": "Nome do titular inválido.",
+        };
+        onError(errorMessages[cause.code] || cause.description || `Erro: ${cause.code}`);
+      } else {
+        onError(errorObj?.message || "Erro ao processar cartão.");
+      }
+    } finally {
+      setTokenizing(false);
     }
   }
 
@@ -536,10 +568,10 @@ function CheckoutCardForm({
       </div>
       <button
         type="submit"
-        disabled={loading || !scriptOk}
+        disabled={loading || tokenizing || !scriptOk}
         className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
       >
-        {loading ? "Processando…" : "Pagar"}
+        {tokenizing ? "Validando cartão…" : loading ? "Processando pagamento…" : "Pagar"}
       </button>
     </form>
   );

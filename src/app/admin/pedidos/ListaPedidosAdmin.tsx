@@ -8,6 +8,7 @@ import {
   reenviarEmailEntrega,
   marcarComoEntregue,
   atribuirContasEPrepararEntrega,
+  alterarSituacaoPedido,
 } from "./actions";
 import type { PedidoComItens } from "@/lib/pedidos";
 import type { SituacaoPedido } from "@/lib/pedidos";
@@ -39,16 +40,16 @@ function formatarPreco(valor: number) {
 const SITUACAO_LABEL: Record<SituacaoPedido, string> = {
   pendente: "Pendente",
   pago: "Pago",
-  cancelado: "Cancelado",
   entregue: "Entregue",
+  cancelado: "Cancelado",
   rejeitado: "Rejeitado",
 };
 
 const SITUACAO_COR: Record<SituacaoPedido, string> = {
   pendente: "bg-amber-500",
   pago: "bg-emerald-500",
-  cancelado: "bg-red-500",
   entregue: "bg-blue-500",
+  cancelado: "bg-red-500",
   rejeitado: "bg-red-600",
 };
 
@@ -63,7 +64,20 @@ export function ListaPedidosAdmin({
   const router = useRouter();
   const [acaoId, setAcaoId] = useState<string | null>(null);
   const [menuAberto, setMenuAberto] = useState<string | null>(null);
+  const [situacaoAberta, setSituacaoAberta] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+
+  async function handleMudarSituacao(id: string, novaSituacao: SituacaoPedido) {
+    setAcaoId(id);
+    setMensagem(null);
+    const res = await alterarSituacaoPedido(id, novaSituacao);
+    setAcaoId(null);
+    setSituacaoAberta(null);
+    if (res.ok) {
+      router.refresh();
+      setMensagem({ tipo: "ok", texto: `Situação alterada para ${SITUACAO_LABEL[novaSituacao]}.` });
+    } else setMensagem({ tipo: "erro", texto: res.erro ?? "Erro." });
+  }
 
   function buildUrl(updates: { situacao?: string; forma_pagamento?: string; pagina?: number }) {
     const p = new URLSearchParams();
@@ -223,10 +237,41 @@ export function ListaPedidosAdmin({
                 <tr key={p.id} className="border-b border-[var(--border)]/80 hover:bg-zinc-800/30">
                   <td className="p-4 font-medium text-white">{p.numero}</td>
                   <td className="p-4">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${SITUACAO_COR[p.situacao]} bg-opacity-20 text-white`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${SITUACAO_COR[p.situacao]}`} />
-                      {SITUACAO_LABEL[p.situacao]}
-                    </span>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setSituacaoAberta(situacaoAberta === p.id ? null : p.id)}
+                        disabled={!!acaoId}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${SITUACAO_COR[p.situacao]} bg-opacity-20 text-white cursor-pointer hover:bg-opacity-40 transition-colors disabled:opacity-50`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${SITUACAO_COR[p.situacao]}`} />
+                        {SITUACAO_LABEL[p.situacao]}
+                        <svg className="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {situacaoAberta === p.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setSituacaoAberta(null)} />
+                          <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--card)] py-1 shadow-xl">
+                            {(["pendente", "pago", "entregue", "cancelado", "rejeitado"] as SituacaoPedido[]).map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => handleMudarSituacao(p.id, s)}
+                                disabled={p.situacao === s}
+                                className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                  p.situacao === s ? "text-emerald-400" : "text-zinc-300"
+                                }`}
+                              >
+                                <span className={`h-2 w-2 rounded-full ${SITUACAO_COR[s]}`} />
+                                {SITUACAO_LABEL[s]}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-zinc-300">{formatarData(p.created_at)}</td>
                   <td className="p-4 text-zinc-300">{p.cliente_nome}</td>

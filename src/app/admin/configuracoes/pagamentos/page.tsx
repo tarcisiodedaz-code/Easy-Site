@@ -19,6 +19,7 @@ export default async function AdminConfiguracoesPagamentosPage() {
           initialPublicKey={config?.publicKey ?? ""}
           initialAccessToken={config?.accessToken ?? ""}
           initialSandbox={config?.sandbox ?? true}
+          initialTaxaCartao={config?.taxaCartao ?? 5}
         />
       </section>
 

@@ -6,7 +6,7 @@ import type { ProdutoLoja } from "@/lib/supabase";
 
 type AddToCartButtonProps = {
   produto: ProdutoLoja;
-  variant?: "default" | "secondary" | "gradient";
+  variant?: "default" | "secondary" | "gradient" | "purple";
   className?: string;
   children?: React.ReactNode;
 };
@@ -42,7 +42,9 @@ export function AddToCartButton({
       ? "border border-[var(--accent)] bg-transparent text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white"
       : variant === "gradient"
         ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-md shadow-violet-500/20 hover:shadow-lg hover:shadow-violet-500/40 hover:brightness-110"
-        : "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]";
+        : variant === "purple"
+          ? "bg-violet-600 text-white shadow-md hover:bg-violet-500 hover:shadow-lg"
+          : "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]";
 
   return (
     <button

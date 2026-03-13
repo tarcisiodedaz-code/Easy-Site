@@ -6,16 +6,19 @@ type Props = {
   initialPublicKey: string;
   initialAccessToken: string;
   initialSandbox: boolean;
+  initialTaxaCartao: number;
 };
 
 export function PagamentosClient({
   initialPublicKey,
   initialAccessToken,
   initialSandbox,
+  initialTaxaCartao,
 }: Props) {
   const [publicKey, setPublicKey] = useState(initialPublicKey);
   const [accessToken, setAccessToken] = useState(initialAccessToken);
   const [sandbox, setSandbox] = useState(initialSandbox);
+  const [taxaCartao, setTaxaCartao] = useState(initialTaxaCartao);
   const [salvando, setSalvando] = useState(false);
   const [testando, setTestando] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
@@ -25,7 +28,7 @@ export function PagamentosClient({
     setSalvando(true);
     setMsg(null);
     const { salvarConfigMercadoPago } = await import("./actions");
-    const res = await salvarConfigMercadoPago({ publicKey, accessToken, sandbox });
+    const res = await salvarConfigMercadoPago({ publicKey, accessToken, sandbox, taxaCartao });
     setSalvando(false);
     if (res.ok) {
       setMsg({ tipo: "ok", texto: "Configurações salvas." });
@@ -115,6 +118,29 @@ export function PagamentosClient({
             <span className="text-zinc-300">Sandbox (teste)</span>
           </label>
         </div>
+      </div>
+
+      <div className="border-t border-zinc-700 pt-6">
+        <label htmlFor="taxaCartao" className="mb-1 block text-sm font-medium text-zinc-300">
+          Taxa Cartão Mercado Pago (%)
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            id="taxaCartao"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            value={taxaCartao}
+            onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)}
+            className="w-32 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+          <span className="text-zinc-400">%</span>
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">
+          Taxa aplicada ao preço para pagamentos com cartão. Ex: 5% sobre R$ 100,00 = R$ 105,00.
+          O parcelamento no card de produto será calculado com essa taxa.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-3">

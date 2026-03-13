@@ -29,6 +29,8 @@ export type MercadoPagoConfig = {
   publicKey: string;
   accessToken: string;
   sandbox: boolean;
+  /** Taxa aplicada ao pagamento com cartão (em %). Padrão: 5% */
+  taxaCartao?: number;
 } | null;
 
 export type LojaConfigMap = {
