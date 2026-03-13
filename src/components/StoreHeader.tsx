@@ -67,13 +67,25 @@ export function StoreHeader() {
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null);
   const [navVisible, setNavVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(null);
+  const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const cached = sessionStorage.getItem("loja_config_public");
+      if (cached) return JSON.parse(cached) as PublicConfig;
+    } catch {}
+    return null;
+  });
   const lastScrollY = useRef(0);
 
   useEffect(() => {
     fetch("/api/loja-config/public")
       .then((r) => r.json())
-      .then((data: PublicConfig) => setPublicConfig(data))
+      .then((data: PublicConfig) => {
+        setPublicConfig(data);
+        try {
+          sessionStorage.setItem("loja_config_public", JSON.stringify(data));
+        } catch {}
+      })
       .catch(() => {});
   }, []);
 
@@ -131,7 +143,13 @@ export function StoreHeader() {
             className="flex shrink-0 items-center gap-3 transition-opacity hover:opacity-90"
             aria-label="Easy Games - Início"
           >
-            {publicConfig?.logo_marca?.url ? (
+            {publicConfig === null ? (
+              /* Enquanto carrega a config: placeholder do mesmo tamanho para não mostrar a logo antiga */
+              <div
+                className="h-12 w-[140px] shrink-0 animate-pulse rounded bg-zinc-800 sm:h-14 sm:w-[180px] md:h-16 md:w-[220px]"
+                aria-hidden
+              />
+            ) : publicConfig?.logo_marca?.url ? (
               <img
                 src={publicConfig.logo_marca.url}
                 alt="Easy Games"
