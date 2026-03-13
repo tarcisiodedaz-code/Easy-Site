@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!cliente_nome?.trim() || !cliente_email?.trim() || !Array.isArray(itens) || itens.length === 0) {
-      return NextResponse.json({ erro: "Dados inválidos." }, { status: 400 });
+      return NextResponse.json({ erro: "Dados inválidos. Preencha nome, email e adicione itens ao carrinho." }, { status: 400 });
     }
 
     const total = itens.reduce((s, i) => s + i.preco_unitario * i.quantidade, 0);
@@ -38,7 +38,13 @@ export async function POST(request: NextRequest) {
       insertPayload.cliente_cpf = String(cliente_cpf).trim();
     }
 
-    const supabase = createAdminClient();
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch (e) {
+      console.error("Erro ao criar cliente Supabase:", e);
+      return NextResponse.json({ erro: "Configuração do banco de dados incompleta. Verifique as variáveis de ambiente." }, { status: 500 });
+    }
 
     const { data: pedido, error: errPedido } = await supabase
       .from("pedidos")
