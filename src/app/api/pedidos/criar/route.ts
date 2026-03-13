@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { criarPagamentoPix } from "@/lib/mercado-pago";
 
 type Item = { produto_id: string; produto_nome: string; preco_unitario: number; quantidade: number };
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     }
 
     const total = itens.reduce((s, i) => s + i.preco_unitario * i.quantidade, 0);
-    const forma = forma_pagamento === "mercado_pago" ? "mercado_pago" : forma_pagamento;
+    // Normaliza forma de pagamento para valores aceitos no banco (pix | mercado_pago)
+    const forma = forma_pagamento === "pix" ? "pix" : "mercado_pago";
 
     const insertPayload: Record<string, unknown> = {
       cliente_nome: cliente_nome.trim(),
@@ -37,6 +38,8 @@ export async function POST(request: NextRequest) {
       insertPayload.cliente_cpf = String(cliente_cpf).trim();
     }
 
+    const supabase = createAdminClient();
+
     const { data: pedido, error: errPedido } = await supabase
       .from("pedidos")
       .insert(insertPayload)
@@ -44,8 +47,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (errPedido || !pedido) {
-      console.error(errPedido);
-      return NextResponse.json({ erro: "Erro ao criar pedido." }, { status: 500 });
+      console.error("Erro ao criar pedido no Supabase:", errPedido);
+      const detalhe = errPedido?.message || "Erro desconhecido";
+      return NextResponse.json({ erro: `Erro ao criar pedido: ${detalhe}` }, { status: 500 });
     }
 
     await supabase.from("pedido_itens").insert(
