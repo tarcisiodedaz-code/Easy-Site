@@ -8,6 +8,11 @@ import type { MercadoPagoConfig } from "@/types/loja-config";
 
 const MP_API = "https://api.mercadopago.com";
 
+/** Gera um ID único para o header X-Idempotency-Key */
+function gerarIdempotencyKey(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
 export async function getMercadoPagoConfig(): Promise<MercadoPagoConfig> {
   return getLojaConfig("mercado_pago");
 }
@@ -94,6 +99,7 @@ export async function criarPagamentoPix(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "X-Idempotency-Key": gerarIdempotencyKey(),
       },
       body: JSON.stringify({
         transaction_amount: params.transaction_amount,
@@ -156,6 +162,7 @@ export async function criarPagamentoCartao(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "X-Idempotency-Key": gerarIdempotencyKey(),
       },
       body: JSON.stringify({
         transaction_amount: params.transaction_amount,
