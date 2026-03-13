@@ -35,7 +35,6 @@ export function BuyNowButton({ produto, className = "", children }: Props) {
         nome: produto.nome,
         preco: produto.preco,
         imagem_url: produto.imagem_url,
-        quantidade: 1,
       });
       router.push("/checkout");
     } else {
