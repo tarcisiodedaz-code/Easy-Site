@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { AuthRedirectHandler } from "@/components/AuthRedirectHandler";
 import { getLojaConfig } from "@/lib/loja-config";
 
 const geistSans = Geist({
@@ -33,7 +34,10 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <CartProvider>{children}</CartProvider>
+        <CartProvider>
+          <AuthRedirectHandler />
+          {children}
+        </CartProvider>
       </body>
     </html>
   );

@@ -14,26 +14,43 @@ export function FormRedefinirSenha() {
 
   useEffect(() => {
     const supabase = createClient();
-    let attempts = 0;
-    const maxAttempts = 5;
-    function checkSession() {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setReady(true);
-          return;
+
+    async function processRecoveryToken() {
+      // Primeiro, tenta pegar uma sessão existente
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
+      }
+
+      // Se não há sessão, tenta processar o hash da URL
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      if (hash && hash.includes("access_token") && hash.includes("type=recovery")) {
+        const params = new URLSearchParams(hash.replace("#", ""));
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          // Tenta criar a sessão com os tokens
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (!error) {
+            setReady(true);
+            // Limpa o hash da URL para não ficar exposto
+            window.history.replaceState(null, "", window.location.pathname);
+            return;
+          }
         }
-        const hash = typeof window !== "undefined" ? window.location.hash : "";
-        if (hash && hash.includes("type=recovery") && attempts < maxAttempts) {
-          attempts += 1;
-          setTimeout(() => checkSession(), 300);
-          return;
-        }
-        if (!session) {
-          setError("Link inválido ou expirado. Solicite um novo link em Esqueci minha senha.");
-        }
-      });
+      }
+
+      // Se chegou aqui, não conseguiu criar sessão
+      setError("Link inválido ou expirado. Solicite um novo link em Esqueci minha senha.");
     }
-    checkSession();
+
+    processRecoveryToken();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
