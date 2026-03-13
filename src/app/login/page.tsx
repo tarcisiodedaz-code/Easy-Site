@@ -16,7 +16,7 @@ export default async function LoginPage({
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <StoreHeader />
-      <main className="mx-auto max-w-md px-4 py-12">
+      <main className="mx-auto max-w-md px-4 pt-[160px] pb-12 sm:pt-[180px]">
         <h1 className="text-2xl font-bold text-white">Entrar ou cadastrar</h1>
         <p className="mt-1 text-zinc-400">
           Para continuar sua compra, faça login ou crie uma conta.

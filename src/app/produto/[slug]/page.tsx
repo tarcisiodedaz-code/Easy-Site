@@ -8,6 +8,7 @@ import { getLojaConfig } from "@/lib/loja-config";
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { BuyNowButton } from "@/components/BuyNowButton";
 import { ProdutoCard } from "@/components/ProdutoCard";
 import type { ProdutoLoja } from "@/lib/supabase";
 
@@ -134,12 +135,12 @@ export default async function ProdutoSlugPage({ params }: Props) {
                 </div>
               ) : (
                 <>
-                  <Link
-                    href="/login?redirect=/carrinho"
-                    className="flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
+                  <BuyNowButton
+                    produto={{ ...produto, preco: precoExibir }}
+                    className="w-full"
                   >
                     Comprar
-                  </Link>
+                  </BuyNowButton>
                   <AddToCartButton
                     produto={{ ...produto, preco: precoExibir }}
                     className="w-full rounded-xl px-6 py-3 text-sm font-semibold"
