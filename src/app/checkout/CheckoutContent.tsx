@@ -239,6 +239,7 @@ export function CheckoutContent() {
           <CheckoutCardForm
             total={total}
             nome={nome}
+            cpf={cpf.replace(/\D/g, "")}
             onSuccess={(token, installments) => handleCartao(token, installments)}
             loading={loading}
           />
@@ -382,13 +383,15 @@ export function CheckoutContent() {
 // Componente que usa o SDK do MP para tokenizar o cartão (CardForm ou createCardToken)
 declare global {
   interface Window {
-    MercadoPago?: new (key: string) => {
+    MercadoPago?: new (key: string, options?: { locale: string }) => {
       createCardToken: (params: {
         cardNumber: string;
         cardholderName: string;
         cardExpirationMonth: string;
         cardExpirationYear: string;
         securityCode: string;
+        identificationType: string;
+        identificationNumber: string;
       }) => Promise<{ id: string }>;
     };
   }
@@ -397,11 +400,13 @@ declare global {
 function CheckoutCardForm({
   total,
   nome,
+  cpf,
   onSuccess,
   loading,
 }: {
   total: number;
   nome: string;
+  cpf: string;
   onSuccess: (token: string, installments: number) => void;
   loading: boolean;
 }) {
@@ -445,22 +450,24 @@ function CheckoutCardForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!publicKey || !window.MercadoPago) return;
-    const mp = new window.MercadoPago(publicKey);
+    const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
     const [month, year] = expMonth.split("/").map((s) => s.trim());
-    const yearFull = year.length === 2 ? `20${year}` : year;
+    const yearFull = year?.length === 2 ? `20${year}` : (year || "2030");
     try {
       const result = await mp.createCardToken({
         cardNumber: cardNumber.replace(/\D/g, ""),
         cardholderName: cardName,
         cardExpirationMonth: month || "01",
-        cardExpirationYear: yearFull || "2030",
+        cardExpirationYear: yearFull,
         securityCode: cvv.replace(/\D/g, ""),
+        identificationType: "CPF",
+        identificationNumber: cpf.replace(/\D/g, "") || "12345678909",
       });
       if (result?.id) {
         onSuccess(result.id, installments);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao gerar token:", err);
     }
   }
 

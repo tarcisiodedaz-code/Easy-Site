@@ -166,7 +166,6 @@ export async function criarPagamentoCartao(
       },
       body: JSON.stringify({
         transaction_amount: params.transaction_amount,
-        payment_method_id: "credit_card",
         token: params.token,
         installments: params.installments,
         payer: {
