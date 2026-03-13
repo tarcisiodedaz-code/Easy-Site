@@ -1,0 +1,48 @@
+========================================
+MOVER ARQUIVOS E ENVIAR PARA O GITHUB
+========================================
+
+PASSO 1 - Arrastar os arquivos para "Easy Site"
+------------------------------------------------
+1. Abra duas pastas no Explorer:
+   - C:\Users\tarci\Documents\Easy Site\easy-games
+   - C:\Users\tarci\Documents\Easy Site
+
+2. DENTRO de "easy-games", selecione TUDO que e do projeto (pastas e arquivos):
+   - src
+   - public
+   - package.json
+   - package-lock.json
+   - next.config.ts (ou .js)
+   - tsconfig.json
+   - .gitignore
+   - docs
+   - supabase
+   - ENVIAR-PARA-GITHUB.ps1
+   - RODAR-ENVIAR-GITHUB.bat
+   (tudo exceto a pasta "easygames-sitev2" e a pasta ".next")
+
+3. ARRASTE tudo para dentro da pasta "Easy Site" (a pasta pai).
+   Se perguntar "substituir?" em algum arquivo, pode escolher Sim.
+
+4. NAO arraste a pasta "easygames-sitev2" (ela e so o repo vazio).
+   NAO precisa arrastar a pasta ".next" (e cache do Next.js).
+
+
+PASSO 2 - Rodar o script para enviar ao GitHub
+------------------------------------------------
+1. Na pasta "Easy Site" ja existem os arquivos:
+   - ENVIAR-EASY-SITE-PARA-GITHUB.ps1
+   - RODAR-ENVIAR-EASY-SITE.bat
+
+2. De duplo clique em: RODAR-ENVIAR-EASY-SITE.bat
+
+3. Espere aparecer "Concluido". Se pedir login do GitHub, use seu usuario e um Personal Access Token como senha.
+
+
+PASSO 3 - Depois (opcional)
+------------------------------------------------
+- Se quiser, pode apagar a pasta "easy-games" antiga (ou deixar como backup).
+- Daqui pra frente, abra o projeto pela pasta "Easy Site" no Cursor (File -> Open Folder -> Easy Site).
+
+========================================

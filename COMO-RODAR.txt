@@ -1,0 +1,27 @@
+========================================
+  COMO RODAR O SITE EASY GAMES
+========================================
+
+1. (Recomendado) Remova a pasta duplicada para o PC nao ficar lento:
+   - Feche o Cursor e todos os terminais.
+   - Dê dois cliques em: REMOVER-PASTA-EASY-GAMES.bat
+   - Assim a pasta "easy-games" dentro de Easy Site sera apagada.
+
+2. Abra o terminal na pasta do projeto:
+   C:\Users\tarci\Documents\Easy Site
+
+3. Rode:
+   npm run dev
+
+4. Abra o navegador em: http://localhost:3000
+   Painel admin: http://localhost:3000/admin
+
+----------------------------------------
+Se der problema (site só carregando, sem estilo, erro):
+----------------------------------------
+- Confira se o .env.local está nesta mesma pasta com
+  NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.
+- Apague a pasta .next e rode de novo: npm run dev
+- Sempre rode "npm run dev" na pasta "Easy Site", nunca dentro de easy-games.
+
+========================================
