@@ -241,31 +241,48 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
       </section>
 
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-        <h2 className="mb-6 text-lg font-semibold text-white">Capa do produto</h2>
-        <p className="mb-3 text-xs text-amber-400/90">
-          Dimensão recomendada: 400×500 px (proporção 4:5) — padronização estilo PS Store.
-        </p>
-        <div className="flex flex-wrap items-start gap-4">
-          <label className="cursor-pointer rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={uploadingImage}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleUploadImage(f);
-              }}
-            />
-            {uploadingImage ? "Enviando…" : "Substituir por nova imagem"}
-          </label>
-          <input
-            type="url"
-            value={imagemUrl}
-            onChange={(e) => setImagemUrl(e.target.value)}
-            placeholder="URL da imagem"
-            className="flex-1 min-w-0 rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
-          />
+        <h2 className="mb-4 text-lg font-semibold text-white">Capa do produto</h2>
+        <div className="flex items-center gap-6">
+          {/* Prévia da imagem */}
+          <div 
+            className="relative shrink-0 overflow-hidden rounded-xl bg-zinc-800 border-2 border-zinc-700"
+            style={{ width: "140px", height: "175px" }}
+          >
+            {imagemUrl ? (
+              <img
+                src={imagemUrl}
+                alt="Prévia da capa"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400";
+                }}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-zinc-500">
+                <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Controles */}
+          <div className="flex flex-col gap-2">
+            <label className="cursor-pointer rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 text-center">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingImage}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUploadImage(f);
+                }}
+              />
+              {uploadingImage ? "Enviando…" : "Alterar imagem"}
+            </label>
+            <p className="text-xs text-zinc-500">Recomendado: 400×500 px</p>
+          </div>
         </div>
       </section>
 

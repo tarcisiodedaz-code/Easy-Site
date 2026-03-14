@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { salvarBannerDivisor } from "./actions";
-import { createBrowserClient } from "@/lib/supabase/browser";
+import { createClient } from "@/lib/supabase/browser";
 import type { BannerDivisorItem } from "@/types/loja-config";
 import { BannerDivisorDefaultIcon } from "@/components/BannerDivisorDefaultIcon";
 
@@ -36,7 +36,7 @@ export function BannerDivisorClient({ config }: Props) {
 
     setUploadingFundo(true);
     try {
-      const supabase = createBrowserClient();
+      const supabase = createClient();
       const ext = file.name.split(".").pop();
       const fileName = `banner-divisor-fundo-${Date.now()}.${ext}`;
       const { data, error } = await supabase.storage
@@ -64,7 +64,7 @@ export function BannerDivisorClient({ config }: Props) {
 
     setUploadingIcone(index);
     try {
-      const supabase = createBrowserClient();
+      const supabase = createClient();
       const ext = file.name.split(".").pop();
       const fileName = `banner-divisor-icone-${index}-${Date.now()}.${ext}`;
       const { data, error } = await supabase.storage
