@@ -19,7 +19,12 @@ function formatarCPF(v: string) {
 
 type Step = "form" | "pix_wait" | "card_form" | "success";
 
-export function CheckoutContent() {
+type CheckoutContentProps = {
+  iconePixUrl?: string | null;
+  iconeMercadoPagoUrl?: string | null;
+};
+
+export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl }: CheckoutContentProps) {
   const { itens, total } = useCart();
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
@@ -253,127 +258,177 @@ export function CheckoutContent() {
 
   // step === "form"
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-6 py-8">
       <h1 className="text-2xl font-bold text-white">Checkout</h1>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-white">Resumo do pedido</h2>
-          <ul className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_1.4fr]">
+        {/* Coluna Esquerda - Resumo do Pedido */}
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="mb-5 text-xl font-semibold text-white">Resumo do pedido</h2>
+          <ul className="space-y-4 max-h-[220px] overflow-y-auto">
             {itens.map((i) => (
-              <li key={i.id} className="flex gap-3 text-sm">
-                <div className="relative h-12 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">
+              <li key={i.id} className="flex gap-4">
+                <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
                   {i.imagem_url && (
                     <Image
                       src={getImagemAltaResolucao(i.imagem_url)}
                       alt={i.nome}
                       fill
                       className="object-cover"
-                      sizes="40px"
+                      sizes="48px"
                       unoptimized
                     />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-white">{i.nome}</p>
-                  <p className="text-zinc-500">
+                  <p className="font-medium text-white text-base">{i.nome}</p>
+                  <p className="text-sm text-zinc-500">
                     {formatarPreco(i.preco)} × {i.quantidade}
                   </p>
                 </div>
-                <p className="font-medium text-zinc-300">
+                <p className="font-semibold text-white text-base">
                   {formatarPreco(i.preco * i.quantidade)}
                 </p>
               </li>
             ))}
-            <li className="border-t border-zinc-700 pt-3 flex justify-between font-semibold text-white">
-              <span>Total</span>
-              <span>{formatarPreco(total)}</span>
-            </li>
           </ul>
+          <div className="mt-5 border-t border-zinc-700 pt-5 flex justify-between text-xl font-bold text-white">
+            <span>Total</span>
+            <span className="text-emerald-400">{formatarPreco(total)}</span>
+          </div>
+        </div>
 
-          <h2 className="mt-8 mb-4 text-lg font-semibold text-white">Dados do cliente</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm text-zinc-400">Nome</label>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-zinc-400">E-mail</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-zinc-400">CPF</label>
-              <input
-                type="text"
-                value={cpf}
-                onChange={(e) => setCpf(formatarCPF(e.target.value))}
-                placeholder="000.000.000-00"
-                maxLength={14}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white"
-              />
+        {/* Coluna Direita - Dados e Pagamento */}
+        <div className="space-y-6">
+          {/* Dados do Cliente */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <h2 className="mb-5 text-xl font-semibold text-white">Dados do cliente</h2>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">Nome</label>
+                <input
+                  type="text"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-zinc-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">E-mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-zinc-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">CPF</label>
+                <input
+                  type="text"
+                  value={cpf}
+                  onChange={(e) => setCpf(formatarCPF(e.target.value))}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-zinc-500 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
-          <h2 className="mt-8 mb-4 text-lg font-semibold text-white">Forma de pagamento</h2>
-          <div className="flex gap-4">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="radio"
-                name="metodo"
-                checked={metodo === "pix"}
-                onChange={() => setMetodo("pix")}
-                className="rounded-full border-zinc-600 text-emerald-500"
-              />
-              <span className="text-zinc-300">PIX</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="radio"
-                name="metodo"
-                checked={metodo === "card"}
-                onChange={() => setMetodo("card")}
-                className="rounded-full border-zinc-600 text-emerald-500"
-              />
-              <span className="text-zinc-300">Cartão de crédito</span>
-            </label>
-          </div>
-
-          {erro && (
-            <p className="mt-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300">{erro}</p>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            {metodo === "pix" && (
+          {/* Forma de Pagamento */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <h2 className="mb-5 text-xl font-semibold text-white">Forma de pagamento</h2>
+            <div className="grid grid-cols-2 gap-5">
+              {/* Card PIX */}
               <button
                 type="button"
-                onClick={handlePix}
-                disabled={loading}
-                className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                onClick={() => setMetodo("pix")}
+                className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-5 transition-all duration-200 ${
+                  metodo === "pix"
+                    ? "border-emerald-500 bg-emerald-950/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                    : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                }`}
               >
-                {loading ? "Gerando PIX…" : "Gerar PIX"}
+                {metodo === "pix" && (
+                  <span className="absolute -top-2.5 -right-2 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
+                    SELECIONADO
+                  </span>
+                )}
+                <div className="flex h-14 w-14 items-center justify-center">
+                  {iconePixUrl ? (
+                    <img src={iconePixUrl} alt="PIX" className="h-12 w-12 object-contain" />
+                  ) : (
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${metodo === "pix" ? "bg-emerald-500/20" : "bg-zinc-700"}`}>
+                      <span className={`text-lg font-bold ${metodo === "pix" ? "text-emerald-400" : "text-zinc-400"}`}>PIX</span>
+                    </div>
+                  )}
+                </div>
+                <span className={`text-base font-semibold ${metodo === "pix" ? "text-emerald-400" : "text-zinc-300"}`}>
+                  PIX
+                </span>
+                <span className="text-xs text-zinc-500">Aprovação imediata</span>
               </button>
-            )}
-            {metodo === "card" && (
+
+              {/* Card Cartão */}
               <button
                 type="button"
-                onClick={() => setStep("card_form")}
-                className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-500"
+                onClick={() => setMetodo("card")}
+                className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-5 transition-all duration-200 ${
+                  metodo === "card"
+                    ? "border-[#00AEEF] bg-[#00AEEF]/10 shadow-[0_0_20px_rgba(0,174,239,0.2)]"
+                    : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
+                }`}
               >
-                Continuar para o cartão
+                {metodo === "card" && (
+                  <span className="absolute -top-2.5 -right-2 rounded-full bg-[#00AEEF] px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
+                    SELECIONADO
+                  </span>
+                )}
+                <div className="flex h-14 w-14 items-center justify-center">
+                  {iconeMercadoPagoUrl ? (
+                    <img src={iconeMercadoPagoUrl} alt="Mercado Pago" className="h-12 w-12 object-contain" />
+                  ) : (
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${metodo === "card" ? "bg-[#00AEEF]/20" : "bg-zinc-700"}`}>
+                      <span className={`text-lg font-bold ${metodo === "card" ? "text-[#00AEEF]" : "text-zinc-400"}`}>MP</span>
+                    </div>
+                  )}
+                </div>
+                <span className={`text-base font-semibold ${metodo === "card" ? "text-[#00AEEF]" : "text-zinc-300"}`}>
+                  Cartão de Crédito
+                </span>
+                <span className="text-xs text-zinc-500">Via Mercado Pago</span>
               </button>
+            </div>
+
+            {erro && (
+              <p className="mt-5 rounded-lg bg-red-950/50 p-4 text-sm text-red-300">{erro}</p>
             )}
+
+            <div className="mt-6">
+              {metodo === "pix" && (
+                <button
+                  type="button"
+                  onClick={handlePix}
+                  disabled={loading || !nome.trim() || !email.trim()}
+                  className="w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? "Gerando PIX…" : "Pagar com PIX"}
+                </button>
+              )}
+              {metodo === "card" && (
+                <button
+                  type="button"
+                  onClick={() => setStep("card_form")}
+                  disabled={!nome.trim() || !email.trim()}
+                  className="w-full rounded-xl bg-[#00AEEF] py-3.5 text-lg font-semibold text-white hover:bg-[#0099d4] disabled:opacity-50 transition-colors"
+                >
+                  Pagar com Cartão
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

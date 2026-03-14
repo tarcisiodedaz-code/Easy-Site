@@ -2,16 +2,22 @@ import Link from "next/link";
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { FormEsqueciSenha } from "./FormEsqueciSenha";
+import { getLojaConfig } from "@/lib/loja-config";
+import { getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
 
 export const metadata = {
   title: "Esqueci minha senha | Easy Games",
   description: "Solicite o link para redefinir sua senha.",
 };
 
-export default function EsqueciSenhaPage() {
+export default async function EsqueciSenhaPage() {
+  const [logoMarca, categoriasMenu] = await Promise.all([
+    getLojaConfig("logo_marca"),
+    getCategoriasProdutoParaMenu(),
+  ]);
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <StoreHeader />
+      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
       <main className="mx-auto max-w-md px-4 py-12">
         <h1 className="text-2xl font-bold text-white">Esqueci minha senha</h1>
         <p className="mt-1 text-zinc-400">

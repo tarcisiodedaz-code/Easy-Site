@@ -29,4 +29,8 @@ export type ProdutoLoja = {
   is_lancamento?: boolean;
   /** Vitrine: exibir na seção "Mais Vendidos" */
   is_mais_vendido?: boolean;
+  /** Disponível para PlayStation 4 */
+  disponivel_ps4?: boolean;
+  /** Disponível para PlayStation 5 */
+  disponivel_ps5?: boolean;
 };

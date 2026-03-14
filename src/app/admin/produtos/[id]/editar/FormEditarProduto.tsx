@@ -24,6 +24,8 @@ type ProdutoCompleto = ProdutoLoja & {
   oferta_inicio?: string | null;
   oferta_fim?: string | null;
   is_lancamento?: boolean;
+  disponivel_ps4?: boolean;
+  disponivel_ps5?: boolean;
 };
 
 type Props = { produto: ProdutoCompleto; categorias: CategoriaProduto[]; categoriaIdsIniciais: string[] };
@@ -84,6 +86,8 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
   const [selectedCategoriaIds, setSelectedCategoriaIds] = useState<Set<string>>(
     () => new Set(categoriaIdsIniciais)
   );
+  const [disponivelPs4, setDisponivelPs4] = useState(produto.disponivel_ps4 !== false);
+  const [disponivelPs5, setDisponivelPs5] = useState(produto.disponivel_ps5 !== false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -141,6 +145,8 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
       quantidade_estoque: Number(quantidadeEstoque) || 0,
       slug: slug || null,
       categoria_ids: Array.from(selectedCategoriaIds),
+      disponivel_ps4: disponivelPs4,
+      disponivel_ps5: disponivelPs5,
     });
     setSalvando(false);
     if (res.ok) {
@@ -194,6 +200,44 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
             <Switch label="Em destaque" checked={emDestaque} onChange={setEmDestaque} />
           </div>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-6 text-lg font-semibold text-white">Plataformas disponíveis</h2>
+        <p className="mb-4 text-sm text-zinc-400">Selecione para quais consoles este jogo está disponível:</p>
+        <div className="flex flex-wrap gap-6">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 transition-colors hover:border-zinc-600">
+            <input
+              type="checkbox"
+              checked={disponivelPs4}
+              onChange={(e) => setDisponivelPs4(e.target.checked)}
+              className="h-5 w-5 rounded border-zinc-600 bg-zinc-700 text-emerald-500 focus:ring-emerald-500"
+            />
+            <div className="flex items-center gap-2">
+              <svg className="h-6 w-6 text-zinc-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.5 5.5v5.07L14.05 8l-4.55-2.5zm-1 11V13l-1.17.65v4.7l1.17.65zm1.17-4.35L14.05 15l-4.55-2.5v-1.17l4.55 2.5-4.55 2.5v3.15l6.9-3.85-6.9-3.85v1.17zm7.08.35l-1.5.84v4.16l1.5-.84v-4.16zm-7.08-4.35V6.98l6.9 3.85-6.9 3.85V12.5l4.55-2.5-4.55 2.5V11.15z"/>
+              </svg>
+              <span className="font-medium text-white">PlayStation 4</span>
+            </div>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 transition-colors hover:border-zinc-600">
+            <input
+              type="checkbox"
+              checked={disponivelPs5}
+              onChange={(e) => setDisponivelPs5(e.target.checked)}
+              className="h-5 w-5 rounded border-zinc-600 bg-zinc-700 text-emerald-500 focus:ring-emerald-500"
+            />
+            <div className="flex items-center gap-2">
+              <svg className="h-6 w-6 text-zinc-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9.5 5.5v5.07L14.05 8l-4.55-2.5zm-1 11V13l-1.17.65v4.7l1.17.65zm1.17-4.35L14.05 15l-4.55-2.5v-1.17l4.55 2.5-4.55 2.5v3.15l6.9-3.85-6.9-3.85v1.17zm7.08.35l-1.5.84v4.16l1.5-.84v-4.16zm-7.08-4.35V6.98l6.9 3.85-6.9 3.85V12.5l4.55-2.5-4.55 2.5V11.15z"/>
+              </svg>
+              <span className="font-medium text-white">PlayStation 5</span>
+            </div>
+          </label>
+        </div>
+        {!disponivelPs4 && !disponivelPs5 && (
+          <p className="mt-3 text-sm text-amber-400">⚠ Selecione pelo menos uma plataforma</p>
+        )}
       </section>
 
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">

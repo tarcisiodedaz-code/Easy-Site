@@ -4,10 +4,15 @@ import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { ClassificarFiltrarCategoria } from "@/components/ClassificarFiltrarCategoria";
 import { getCategoriaIdPorSlugs, getProdutosPorCategoriaId, getCategoriasProduto, getCategoriasProdutoParaMenu, getCategoriaIdsPorProdutos } from "@/lib/produtos-completo";
+import { getLojaConfig } from "@/lib/loja-config";
 
 type Props = { params: Promise<{ slug?: string[] }> };
 
 export default async function CategoriaPage({ params }: Props) {
+  const [logoMarca, categoriasMenu] = await Promise.all([
+    getLojaConfig("logo_marca"),
+    getCategoriasProdutoParaMenu(),
+  ]);
   let slugSegments: string[] | undefined;
   try {
     const p = await params;
@@ -21,7 +26,7 @@ export default async function CategoriaPage({ params }: Props) {
     const menu = await getCategoriasProdutoParaMenu();
     return (
       <div className="min-h-screen bg-[var(--background)]">
-        <StoreHeader />
+        <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
         <main className="mx-auto max-w-7xl px-4 pt-[130px] pb-10 sm:px-6 sm:pt-[140px] md:pt-[150px] md:pb-14 lg:px-8">
           <h1 className="mb-8 text-2xl font-bold text-white">Categorias</h1>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -72,7 +77,7 @@ export default async function CategoriaPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <StoreHeader />
+      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
       <main className="mx-auto max-w-7xl px-4 pt-[130px] pb-10 sm:px-6 sm:pt-[140px] md:pt-[150px] md:pb-14 lg:px-8">
         <nav className="mb-8 text-sm text-zinc-400">
           <Link href="/" className="hover:text-white">Início</Link>

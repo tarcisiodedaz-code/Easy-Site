@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { getPaginaPorSlug } from "@/lib/paginas";
+import { getLojaConfig } from "@/lib/loja-config";
+import { getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -23,7 +25,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PaginaInstitucional({ params }: Props) {
   const { slug } = await params;
-  const pagina = await getPaginaPorSlug(slug);
+  const [pagina, logoMarca, categoriasMenu] = await Promise.all([
+    getPaginaPorSlug(slug),
+    getLojaConfig("logo_marca"),
+    getCategoriasProdutoParaMenu(),
+  ]);
 
   if (!pagina) {
     notFound();
@@ -31,11 +37,11 @@ export default async function PaginaInstitucional({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <StoreHeader />
+      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
 
-      <main className="pt-[130px] pb-16 sm:pt-[140px] md:pt-[150px]">
+      <main className="pt-[200px] pb-16 sm:pt-[210px] md:pt-[220px]">
         <article className="mx-auto max-w-4xl px-4">
-          <header className="mb-8 border-b border-[var(--border)] pb-6">
+          <header className="mb-8 border-b border-[var(--border)] pb-6 text-center">
             <h1 className="text-3xl font-bold text-white md:text-4xl">
               {pagina.titulo}
             </h1>

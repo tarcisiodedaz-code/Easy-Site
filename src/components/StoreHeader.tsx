@@ -88,28 +88,46 @@ function IconHamburger({ isOpen }: { isOpen: boolean }) {
 
 type PublicConfig = { logo_marca: { url: string } | null; favicon: { url: string } | null };
 
+type CategoriaMenuSimples = {
+  id: string;
+  nome: string;
+  slug: string | null;
+  href: string;
+  icon_url?: string | null;
+  filhos: { id: string; nome: string; slug: string | null; href: string; icon_url?: string | null }[];
+};
+
+type StoreHeaderProps = {
+  logoUrl?: string | null;
+  categoriasMenu?: CategoriaMenuSimples[] | null;
+};
+
 function formatBRL(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
-export function StoreHeader() {
+export function StoreHeader({ logoUrl, categoriasMenu }: StoreHeaderProps = {}) {
   const { count, total } = useCart();
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [navForceOpen, setNavForceOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const cached = sessionStorage.getItem("loja_config_public");
-      if (cached) return JSON.parse(cached) as PublicConfig;
-    } catch {}
-    return null;
-  });
+  const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(
+    logoUrl !== undefined ? { logo_marca: logoUrl ? { url: logoUrl } : null, favicon: null } : null
+  );
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    if (logoUrl !== undefined) return;
+    
+    try {
+      const cached = sessionStorage.getItem("loja_config_public");
+      if (cached) {
+        setPublicConfig(JSON.parse(cached) as PublicConfig);
+      }
+    } catch {}
+
     fetch("/api/loja-config/public")
       .then((r) => r.json())
       .then((data: PublicConfig) => {
@@ -195,7 +213,7 @@ export function StoreHeader() {
                 }`}
                 aria-hidden
               />
-            ) : publicConfig?.logo_marca?.url ? (
+            ) : publicConfig.logo_marca?.url ? (
               <img
                 src={publicConfig.logo_marca.url}
                 alt="Easy Games"
@@ -320,11 +338,11 @@ export function StoreHeader() {
 
       {/* Navegação inferior (Gift Card, PlayStation 5, etc.) */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          showNav ? "max-h-14 opacity-100" : "max-h-0 opacity-0"
+        className={`transition-all duration-300 ease-in-out ${
+          showNav ? "max-h-20 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
-        <StoreNav />
+        <StoreNav categoriasIniciais={categoriasMenu} />
       </div>
     </header>
   );

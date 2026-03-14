@@ -30,6 +30,11 @@ function temOfertaValida(produto: ProdutoLoja): boolean {
   return true;
 }
 
+function calcularParcela(preco: number, taxa: number = 5, parcelas: number = 12): number {
+  const precoComTaxa = preco + (preco * taxa / 100);
+  return precoComTaxa / parcelas;
+}
+
 function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => void }) {
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
@@ -46,15 +51,17 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
       : 0;
   const slug = (produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo;
+  const parcela = calcularParcela(precoExibirNum);
 
   return (
     <Link
       href={`/produto/${slug}`}
       onClick={onClick}
-      className="group flex shrink-0 flex-col overflow-hidden rounded-[16px] border border-zinc-200 bg-white transition-shadow hover:shadow-md"
+      className="group flex shrink-0 flex-col overflow-hidden rounded-xl bg-white transition-shadow hover:shadow-lg"
       style={{ width: MINI_CARD_WIDTH }}
     >
-      <div className="relative w-full overflow-hidden rounded-t-[16px] bg-zinc-100" style={{ aspectRatio: "3/4" }}>
+      {/* Imagem ocupando 100% sem bordas */}
+      <div className="relative w-full overflow-hidden bg-zinc-100" style={{ aspectRatio: "3/4" }}>
         <Image
           src={imagemUrl}
           alt={produto.nome}
@@ -63,24 +70,35 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
           sizes="180px"
           unoptimized={imagemUrl.startsWith("http") && !imagemUrl.includes("supabase")}
         />
+        {/* Badge de desconto - texto ajustado para caber no círculo */}
         {emOferta && percentualDesconto > 0 && (
-          <div className="absolute left-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 shadow">
-            <span className="text-[10px] font-bold text-white">{percentualDesconto}% OFF</span>
+          <div className="absolute left-1.5 top-1.5 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-red-600 shadow-lg">
+            <span className="text-[11px] font-bold leading-none text-white">-{percentualDesconto}%</span>
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col p-2.5">
-        <h3 className="line-clamp-2 text-xs font-medium leading-tight text-zinc-800 group-hover:text-zinc-900">
+        {/* Nome do produto */}
+        <h3 className="line-clamp-2 text-xs font-semibold leading-tight text-zinc-800 group-hover:text-zinc-900">
           {produto.nome}
         </h3>
-        <div className="mt-1.5 flex flex-col gap-0.5">
-          <p className="text-[11px] text-zinc-500">
-            De {formatarPreco(precoDe)} por{" "}
-            <span className="font-semibold text-zinc-900">{formatarPreco(precoExibir)}</span>
+        
+        <div className="mt-2 flex flex-col gap-0.5">
+          {/* Preço de tabela - riscado */}
+          {precoDeNum > precoExibirNum && (
+            <p className="text-[10px] text-zinc-400 line-through">
+              De {formatarPreco(precoDeNum)}
+            </p>
+          )}
+          
+          {/* Preço PIX - destaque azul (cyan) */}
+          <p className="text-sm font-bold text-cyan-600">
+            {formatarPreco(precoExibirNum)} <span className="text-xs font-medium">no PIX</span>
           </p>
-          <p className="flex items-center gap-1 text-xs font-bold text-cyan-600">
-            <span className="text-cyan-500" aria-hidden>◆</span>
-            {formatarPreco(precoExibir)} via PIX
+          
+          {/* Parcelamento com 5% */}
+          <p className="text-[10px] text-zinc-500">
+            ou 12x de {formatarPreco(parcela)} no cartão
           </p>
         </div>
       </div>
@@ -176,9 +194,9 @@ export function OfertasMegaMenuPanel({ produtos, dataFinalGlobal, onClose }: Ofe
       {/* Painel esquerdo: largura fixa para que a direita tenha 708px+ para 4 cards */}
       <div className="flex w-[260px] shrink-0 flex-col items-center justify-between border-r border-zinc-700/50 bg-zinc-800/80 p-5 sm:w-[272px]">
         <div className="flex flex-col items-center text-center">
-          <h3 className="text-xl font-bold text-white sm:text-[22px]">Promoção imperdível!</h3>
+          <h3 className="text-xl font-bold text-white sm:text-[22px]">Ofertas Exclusivas!</h3>
           <p className="mt-2 text-sm leading-snug text-zinc-300 sm:text-[15px]">
-            Produtos com até 30% OFF + 5% em pagamentos via PIX
+            Preços reduzidos por tempo limitado. Aproveite as melhores condições da loja.
           </p>
           <div className="mt-4 flex flex-col items-center">
             <p className="mb-2 text-sm font-bold uppercase tracking-wider text-zinc-300">

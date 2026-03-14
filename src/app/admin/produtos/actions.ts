@@ -25,6 +25,8 @@ export type ProdutoEdicao = {
   categoria_ids?: string[];
   oferta_inicio?: string | null;
   oferta_fim?: string | null;
+  disponivel_ps4?: boolean;
+  disponivel_ps5?: boolean;
 };
 
 export type ProdutoAdminRow = ProdutoLoja & {
@@ -232,6 +234,8 @@ export async function atualizarProduto(
   }
   if (dados.oferta_inicio !== undefined) update.oferta_inicio = dados.oferta_inicio || null;
   if (dados.oferta_fim !== undefined) update.oferta_fim = dados.oferta_fim || null;
+  if (dados.disponivel_ps4 !== undefined) update.disponivel_ps4 = dados.disponivel_ps4;
+  if (dados.disponivel_ps5 !== undefined) update.disponivel_ps5 = dados.disponivel_ps5;
   update.pendente_info = false;
   const { error } = await supabase.from("produtos_loja").update(update).eq("id", id);
   if (error) {
