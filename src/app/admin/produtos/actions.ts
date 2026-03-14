@@ -48,10 +48,13 @@ export type ProdutoAdminRow = ProdutoLoja & {
   is_mais_vendido?: boolean;
 };
 
+// Nome da categoria de ofertas (usado em várias funções)
+const NOME_OFERTAS = "Ofertas";
+
 // Ordem de prioridade das categorias especiais (maior índice = maior prioridade)
 // Cada item contém variações possíveis do nome
 const CATEGORIAS_PRIORITARIAS: { nome: string; variacoes: string[] }[] = [
-  { nome: "Ofertas", variacoes: ["ofertas", "oferta"] },
+  { nome: NOME_OFERTAS, variacoes: ["ofertas", "oferta"] },
   { nome: "Pré-venda", variacoes: ["pré-venda", "pre-venda", "pré venda", "pre venda", "prevenda"] },
 ];
 
