@@ -40,7 +40,7 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
       : 0;
   const slug = (produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo;
-  const parcela = calcularParcela(precoExibirNum);
+  const parcela = calcularParcela(precoExibirNum, 5);
 
   return (
     <Link
