@@ -48,18 +48,60 @@ export type ProdutoAdminRow = ProdutoLoja & {
   is_mais_vendido?: boolean;
 };
 
-const NOME_OFERTAS = "Ofertas";
+// Ordem de prioridade das categorias especiais (maior índice = maior prioridade)
+// Cada item contém variações possíveis do nome
+const CATEGORIAS_PRIORITARIAS: { nome: string; variacoes: string[] }[] = [
+  { nome: "Ofertas", variacoes: ["ofertas", "oferta"] },
+  { nome: "Pré-venda", variacoes: ["pré-venda", "pre-venda", "pré venda", "pre venda", "prevenda"] },
+];
+
+/**
+ * Normaliza texto removendo acentos para comparação.
+ */
+function normalizarTexto(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
 
 /**
  * Monta o texto de categorias para a listagem:
- * - Mostra apenas categorias pai (subcategorias viram o nome do pai).
- * - Se "Ofertas" estiver entre as selecionadas, exibe só "Ofertas".
+ * - Mostra categorias pai e também subcategorias com seu próprio nome.
+ * - Prioriza categorias especiais na ordem: Pré-venda > Ofertas.
  */
 function labelCategoriasParaListagem(
   catIds: string[],
   catMap: Record<string, { nome: string; parent_id: string | null }>,
   parentMap: Record<string, string>
 ): string | null {
+  // Coleta todos os nomes de categorias (pai e subcategorias)
+  const todosNomes = new Set<string>();
+  for (const id of catIds) {
+    const cat = catMap[id];
+    if (!cat) continue;
+    // Adiciona o nome da categoria
+    if (cat.nome) todosNomes.add(cat.nome);
+    // Se tem pai, adiciona também o nome do pai
+    if (cat.parent_id && parentMap[cat.parent_id]) {
+      todosNomes.add(parentMap[cat.parent_id]);
+    }
+  }
+  
+  if (todosNomes.size === 0) return null;
+  
+  // Verifica categorias prioritárias em ordem de prioridade (último = maior prioridade)
+  for (let i = CATEGORIAS_PRIORITARIAS.length - 1; i >= 0; i--) {
+    const catPrioritaria = CATEGORIAS_PRIORITARIAS[i];
+    const temCategoria = [...todosNomes].some((n) => {
+      const nomeNormalizado = normalizarTexto(n);
+      return catPrioritaria.variacoes.some((v) => nomeNormalizado === v || nomeNormalizado.includes(v));
+    });
+    if (temCategoria) return catPrioritaria.nome;
+  }
+  
+  // Se não tem categoria prioritária, mostra apenas categorias pai
   const nomesPai = new Set<string>();
   for (const id of catIds) {
     const cat = catMap[id];
@@ -67,9 +109,7 @@ function labelCategoriasParaListagem(
     const nomeExibir = cat.parent_id ? (parentMap[cat.parent_id] ?? cat.nome) : cat.nome;
     if (nomeExibir) nomesPai.add(nomeExibir);
   }
-  if (nomesPai.size === 0) return null;
-  const temOfertas = [...nomesPai].some((n) => n.trim().toLowerCase() === NOME_OFERTAS.toLowerCase());
-  if (temOfertas) return NOME_OFERTAS;
+  
   return [...nomesPai].sort().join(", ");
 }
 

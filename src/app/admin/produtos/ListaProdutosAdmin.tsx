@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   moverParaLixeira,
   encerrarPromocoesSelecionadas,
@@ -28,6 +28,71 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [vitrineLoadingId, setVitrineLoadingId] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+
+  // Estados dos filtros
+  const [filtroBusca, setFiltroBusca] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todos");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativo" | "inativo">("todos");
+  const [filtroPromo, setFiltroPromo] = useState<"todos" | "com" | "sem">("todos");
+  const [filtroEstoque, setFiltroEstoque] = useState<"todos" | "disponivel" | "indisponivel">("todos");
+  const [filtroPendente, setFiltroPendente] = useState<"todos" | "sim" | "nao">("todos");
+
+  // Extrair categorias únicas dos produtos
+  const categoriasDisponiveis = useMemo(() => {
+    const cats = new Set<string>();
+    produtos.forEach((p) => {
+      if (p.categoria_nome) cats.add(p.categoria_nome);
+    });
+    return Array.from(cats).sort();
+  }, [produtos]);
+
+  // Aplicar filtros
+  const produtosFiltrados = useMemo(() => {
+    return produtos.filter((p) => {
+      // Filtro de busca por nome
+      if (filtroBusca.trim()) {
+        const busca = filtroBusca.toLowerCase().trim();
+        if (!p.nome.toLowerCase().includes(busca)) return false;
+      }
+
+      // Filtro por categoria
+      if (filtroCategoria !== "todos") {
+        if (p.categoria_nome !== filtroCategoria) return false;
+      }
+
+      // Filtro por status
+      if (filtroStatus !== "todos") {
+        const ativo = p.ativo !== false;
+        if (filtroStatus === "ativo" && !ativo) return false;
+        if (filtroStatus === "inativo" && ativo) return false;
+      }
+
+      // Filtro por promoção
+      if (filtroPromo !== "todos") {
+        const temPromo = p.preco_promocional != null && Number(p.preco_promocional) > 0;
+        if (filtroPromo === "com" && !temPromo) return false;
+        if (filtroPromo === "sem" && temPromo) return false;
+      }
+
+      // Filtro por estoque
+      if (filtroEstoque !== "todos") {
+        const gerenciaEstoque = p.gerenciar_estoque === true;
+        const qtd = Number(p.quantidade_estoque ?? 0);
+        const indisponivel = gerenciaEstoque && qtd <= 0;
+        if (filtroEstoque === "disponivel" && indisponivel) return false;
+        if (filtroEstoque === "indisponivel" && !indisponivel) return false;
+      }
+
+      // Filtro por pendente de info
+      if (filtroPendente !== "todos") {
+        const pendente = p.pendente_info === true;
+        if (filtroPendente === "sim" && !pendente) return false;
+        if (filtroPendente === "nao" && pendente) return false;
+      }
+
+      return true;
+    });
+  }, [produtos, filtroBusca, filtroCategoria, filtroStatus, filtroPromo, filtroEstoque, filtroPendente]);
 
   const todosComPromo = produtos.filter(
     (p) => p.preco_promocional != null && Number(p.preco_promocional) > 0
@@ -171,6 +236,118 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
           {mensagem.texto}
         </div>
       )}
+      {/* Seção de Filtros */}
+      <div className="mb-6 rounded-xl border border-[var(--border)] bg-zinc-900/50 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-zinc-300">Filtros</h3>
+          {(filtroBusca || filtroCategoria !== "todos" || filtroStatus !== "todos" || filtroPromo !== "todos" || filtroEstoque !== "todos" || filtroPendente !== "todos") && (
+            <button
+              type="button"
+              onClick={() => {
+                setFiltroBusca("");
+                setFiltroCategoria("todos");
+                setFiltroStatus("todos");
+                setFiltroPromo("todos");
+                setFiltroEstoque("todos");
+                setFiltroPendente("todos");
+              }}
+              className="text-xs text-zinc-400 hover:text-white"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          {/* Busca por nome */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Buscar por nome</label>
+            <input
+              type="text"
+              value={filtroBusca}
+              onChange={(e) => setFiltroBusca(e.target.value)}
+              placeholder="Digite o nome..."
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
+            />
+          </div>
+
+          {/* Filtro por categoria */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Categoria</label>
+            <select
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="todos">Todas</option>
+              {categoriasDisponiveis.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro por status */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Status</label>
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value as "todos" | "ativo" | "inativo")}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="todos">Todos</option>
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+
+          {/* Filtro por promoção */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Promoção</label>
+            <select
+              value={filtroPromo}
+              onChange={(e) => setFiltroPromo(e.target.value as "todos" | "com" | "sem")}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="todos">Todos</option>
+              <option value="com">Com promoção</option>
+              <option value="sem">Sem promoção</option>
+            </select>
+          </div>
+
+          {/* Filtro por estoque */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Estoque</label>
+            <select
+              value={filtroEstoque}
+              onChange={(e) => setFiltroEstoque(e.target.value as "todos" | "disponivel" | "indisponivel")}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="todos">Todos</option>
+              <option value="disponivel">Disponível</option>
+              <option value="indisponivel">Indisponível</option>
+            </select>
+          </div>
+
+          {/* Filtro por pendente de info */}
+          <div>
+            <label className="mb-1 block text-xs text-zinc-500">Pendente de Info</label>
+            <select
+              value={filtroPendente}
+              onChange={(e) => setFiltroPendente(e.target.value as "todos" | "sim" | "nao")}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-[var(--accent)] focus:outline-none"
+            >
+              <option value="todos">Todos</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+        {produtosFiltrados.length !== produtos.length && (
+          <p className="mt-3 text-xs text-zinc-400">
+            Mostrando {produtosFiltrados.length} de {produtos.length} produto(s)
+          </p>
+        )}
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -202,8 +379,14 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
                 <th className="w-10 p-3">
                   <input
                     type="checkbox"
-                    checked={produtos.length > 0 && selectedIds.size === produtos.length}
-                    onChange={toggleSelectAll}
+                    checked={produtosFiltrados.length > 0 && selectedIds.size === produtosFiltrados.length}
+                    onChange={() => {
+                      if (selectedIds.size === produtosFiltrados.length) {
+                        setSelectedIds(new Set());
+                      } else {
+                        setSelectedIds(new Set(produtosFiltrados.map((p) => p.id!).filter(Boolean)));
+                      }
+                    }}
                     className="rounded border-zinc-600 bg-zinc-800 text-[var(--accent)] focus:ring-[var(--accent)]"
                   />
                 </th>
@@ -218,7 +401,13 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
               </tr>
             </thead>
             <tbody>
-              {produtos.map((p) => {
+              {produtosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center text-zinc-500">
+                    Nenhum produto encontrado com os filtros selecionados.
+                  </td>
+                </tr>
+              ) : produtosFiltrados.map((p) => {
                 const id = p.id!;
                 const img =
                   p.imagem_url ||

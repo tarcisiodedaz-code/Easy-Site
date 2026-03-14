@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import type { ProdutoLoja } from "@/lib/supabase";
+import { formatBRL } from "@/lib/utils/formatters";
 
 const WHATSAPP_NUMERO = "5579999204322";
 
@@ -22,13 +23,6 @@ type Props = {
   iconePS4Inicial?: string | null;
   iconePS5Inicial?: string | null;
 };
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valor);
-}
 
 function PS4Icon({ className = "h-12 w-12" }: { className?: string }) {
   return (
@@ -86,7 +80,7 @@ export function ProdutoPageClient({
 
   const precoComTaxa = precoExibir + (precoExibir * taxaCartao / 100);
   const parcela = precoComTaxa / 12;
-  const precoFormatado = formatarPreco(precoExibir);
+  const precoFormatado = formatBRL(precoExibir);
   const whatsappMsg = `Olá! Gostaria de comprar: ${produto.nome} (${versaoSelecionada?.toUpperCase() || "PS5"}) - ${precoFormatado}`;
 
   const produtoId = produto.id ?? produto.id_externo;
@@ -112,12 +106,12 @@ export function ProdutoPageClient({
   return (
     <section className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr_minmax(0,280px)]">
       {/* Coluna 1: Imagem */}
-      <div className="relative aspect-[3/4] max-h-[480px] w-full overflow-hidden rounded-xl bg-zinc-900 lg:max-h-none">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-zinc-900">
         <Image
           src={imagemUrl}
           alt={produto.nome}
-          width={340}
-          height={453}
+          width={400}
+          height={500}
           className="h-full w-full object-cover"
           priority
           unoptimized={imagemUrl.startsWith("http") && !imagemUrl.includes("supabase")}
@@ -142,14 +136,14 @@ export function ProdutoPageClient({
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold text-emerald-400">{precoFormatado}</span>
             {precoRiscado != null && (
-              <span className="text-lg text-zinc-500 line-through">{formatarPreco(precoRiscado)}</span>
+              <span className="text-lg text-zinc-500 line-through">{formatBRL(precoRiscado)}</span>
             )}
           </div>
 
           {/* Parcelamento */}
           <p className="text-sm text-zinc-300">
             Ou <span className="font-semibold text-white">12x</span> de{" "}
-            <span className="font-semibold text-emerald-400">{formatarPreco(parcela)}</span>{" "}
+            <span className="font-semibold text-emerald-400">{formatBRL(parcela)}</span>{" "}
             sem juros
           </p>
 
@@ -199,9 +193,9 @@ export function ProdutoPageClient({
             <>
               <button
                 onClick={handleAddToCart}
-                disabled={!versaoSelecionada || adicionado}
+                disabled={!versaoSelecionada && !jaNoCarrinho && !adicionado}
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold uppercase tracking-wide transition-all ${
-                  versaoSelecionada
+                  versaoSelecionada || jaNoCarrinho || adicionado
                     ? "bg-emerald-600 text-white hover:bg-emerald-500"
                     : "cursor-not-allowed bg-zinc-700 text-zinc-400"
                 }`}

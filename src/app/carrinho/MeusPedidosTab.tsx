@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
+import { formatBRL } from "@/lib/utils/formatters";
 
 type ContaEntrega = {
   email_conta?: string;
@@ -30,10 +31,6 @@ type Pedido = {
   created_at: string;
   pedido_itens: PedidoItem[];
 };
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
-}
 
 function formatarData(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -73,7 +70,7 @@ function PedidoCard({ pedido, expandido, onToggle }: { pedido: Pedido; expandido
             </span>
           </div>
           <p className="mt-1 text-sm text-zinc-400">
-            {formatarData(pedido.created_at)} • {formaPgto} • {formatarPreco(pedido.total)}
+            {formatarData(pedido.created_at)} • {formaPgto} • {formatBRL(pedido.total)}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
             {pedido.pedido_itens.length} {pedido.pedido_itens.length === 1 ? "item" : "itens"}
@@ -112,7 +109,7 @@ function PedidoCard({ pedido, expandido, onToggle }: { pedido: Pedido; expandido
                   {item.produto_nome}
                 </Link>
                 <p className="text-sm text-zinc-400">
-                  {formatarPreco(item.preco_unitario)} × {item.quantidade}
+                  {formatBRL(item.preco_unitario)} × {item.quantidade}
                 </p>
 
                 {/* Dados de entrega (se houver) */}
@@ -153,7 +150,7 @@ function PedidoCard({ pedido, expandido, onToggle }: { pedido: Pedido; expandido
               </div>
               <div className="text-right">
                 <span className="font-semibold text-emerald-400">
-                  {formatarPreco(item.preco_unitario * item.quantidade)}
+                  {formatBRL(item.preco_unitario * item.quantidade)}
                 </span>
               </div>
             </div>
@@ -161,7 +158,7 @@ function PedidoCard({ pedido, expandido, onToggle }: { pedido: Pedido; expandido
 
           <div className="pt-3 border-t border-zinc-700 flex justify-between items-center">
             <span className="text-zinc-400">Total do pedido</span>
-            <span className="text-lg font-bold text-white">{formatarPreco(pedido.total)}</span>
+            <span className="text-lg font-bold text-white">{formatBRL(pedido.total)}</span>
           </div>
         </div>
       )}

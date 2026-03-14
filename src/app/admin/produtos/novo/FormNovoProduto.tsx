@@ -211,7 +211,7 @@ export function FormNovoProduto({ categorias }: Props) {
           <div>
             <label className="mb-2 block text-sm font-medium text-zinc-300">Imagem do produto</label>
             <p className="mb-2 text-xs text-amber-400/90">
-              Dimensão recomendada: 300×400 px (proporção 3:4) — padronização estilo PS Store.
+              Dimensão recomendada: 400×500 px (proporção 4:5) — padronização estilo PS Store.
             </p>
             <div className="flex flex-wrap gap-4">
               <label className="cursor-pointer rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700">

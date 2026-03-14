@@ -1,31 +1,10 @@
 import { getLojaConfig } from "@/lib/loja-config";
 import { BannerDivisorClient } from "./BannerDivisorClient";
+import { DEFAULTS } from "@/types/loja-config";
 
 export default async function BannerDivisorPage() {
   const config = await getLojaConfig("banner_divisor");
-
-  const defaultConfig = {
-    ativo: true,
-    titulo_principal: "GARANTIA EASY GAMES: DO PRESENTE PARA O FUTURO.",
-    imagem_fundo_url: null,
-    itens: [
-      {
-        icone_url: null,
-        titulo: "COMPRA SEGURA & PROTEÇÃO TOTAL",
-        descricao: "Garantia de recebimento ou seu dinheiro de volta.",
-      },
-      {
-        icone_url: null,
-        titulo: "ENVIO IMEDIATO & DIGITAL",
-        descricao: "Seus códigos em segundos, jogue agora.",
-      },
-      {
-        icone_url: null,
-        titulo: "ECOSSISTEMA COMPLETO GAMER",
-        descricao: "De clássicos a pré-vendas, tudo em um só lugar.",
-      },
-    ],
-  };
+  const defaultConfig = DEFAULTS.banner_divisor!;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">

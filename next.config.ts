@@ -5,8 +5,10 @@ const projectRoot = path.resolve(process.cwd());
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
   webpack: (config) => {
-    // Força resolução de módulos na pasta do projeto (evita "resolve tailwindcss in C:\...\Documents")
     const projectNodeModules = path.join(projectRoot, "node_modules");
     if (Array.isArray(config.resolve.modules)) {
       config.resolve.modules.unshift(projectNodeModules);
@@ -16,6 +18,8 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60,
     remotePatterns: [
       { protocol: "https", hostname: "images.igdb.com", pathname: "/**" },
       { protocol: "https", hostname: "*.supabase.co", pathname: "/**" },

@@ -2,21 +2,16 @@
 
 import { createAdminClient } from "@/lib/supabase-admin";
 import { revalidatePath } from "next/cache";
+import type { BannerDivisorItem } from "@/types/loja-config";
 
-type BannerDivisorItem = {
-  icone_url?: string | null;
-  titulo: string;
-  descricao: string;
-};
-
-type BannerDivisorConfig = {
+type BannerDivisorConfigInput = {
   ativo: boolean;
   titulo_principal: string;
   imagem_fundo_url?: string | null;
   itens: BannerDivisorItem[];
 };
 
-export async function salvarBannerDivisor(config: BannerDivisorConfig) {
+export async function salvarBannerDivisor(config: BannerDivisorConfigInput) {
   try {
     const supabase = createAdminClient();
 

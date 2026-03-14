@@ -5,10 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
-}
+import { formatBRL } from "@/lib/utils/formatters";
 
 function formatarCPF(v: string) {
   const n = v.replace(/\D/g, "").slice(0, 11);
@@ -283,18 +280,18 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl }: CheckoutCo
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-white text-base">{i.nome}</p>
                   <p className="text-sm text-zinc-500">
-                    {formatarPreco(i.preco)} × {i.quantidade}
+                    {formatBRL(i.preco)} × {i.quantidade}
                   </p>
                 </div>
                 <p className="font-semibold text-white text-base">
-                  {formatarPreco(i.preco * i.quantidade)}
+                  {formatBRL(i.preco * i.quantidade)}
                 </p>
               </li>
             ))}
           </ul>
           <div className="mt-5 border-t border-zinc-700 pt-5 flex justify-between text-xl font-bold text-white">
             <span>Total</span>
-            <span className="text-emerald-400">{formatarPreco(total)}</span>
+            <span className="text-emerald-400">{formatBRL(total)}</span>
           </div>
         </div>
 
@@ -616,7 +613,7 @@ function CheckoutCardForm({
         >
           {parcelasOpcoes.map((n) => (
             <option key={n} value={n}>
-              {n}x de {formatarPreco(total / n)} {n > 1 ? "sem juros" : ""}
+              {n}x de {formatBRL(total / n)} {n > 1 ? "sem juros" : ""}
             </option>
           ))}
         </select>

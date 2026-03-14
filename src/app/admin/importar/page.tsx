@@ -12,6 +12,7 @@ import {
   obterPromocaoOfertasEspeciais,
 } from "./actions";
 import type { OfertaImportada, JogoImportado } from "@/types/importar";
+import { DateTimeInputBR } from "@/components/DateTimeInputBR";
 
 const URL_PLAYSTATION =
   "https://store.playstation.com/pt-br/category/3f772501-f6f8-49b7-abac-874a88ca4897/1";
@@ -34,6 +35,9 @@ export default function AdminImportarPage() {
     erros: string[];
   } | null>(null);
 
+  // Seleção múltipla
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+
   // Importar jogo (página do produto)
   const [urlJogo, setUrlJogo] = useState(URL_JOGO_EXEMPLO);
   const [descricaoManual, setDescricaoManual] = useState("");
@@ -45,29 +49,22 @@ export default function AdminImportarPage() {
 
   // Promoção global de Ofertas Especiais
   const [promoNome, setPromoNome] = useState("");
-  const [promoFim, setPromoFim] = useState(""); // datetime-local
+  const [promoFim, setPromoFim] = useState(""); // ISO string
   const [salvandoPromo, setSalvandoPromo] = useState(false);
   const [msgPromo, setMsgPromo] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
   useEffect(() => {
-    // Carrega promoção atual ao abrir a página
     obterPromocaoOfertasEspeciais()
       .then((config) => {
         if (config && typeof config === "object" && "dataFinal" in config) {
           const c = config as { nome?: string; dataFinal?: string };
           setPromoNome(c.nome ?? "");
           if (c.dataFinal) {
-            const d = new Date(c.dataFinal);
-            const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-              .toISOString()
-              .slice(0, 16);
-            setPromoFim(isoLocal);
+            setPromoFim(c.dataFinal);
           }
         }
       })
-      .catch(() => {
-        // ignora erros silenciosamente
-      });
+      .catch(() => {});
   }, []);
 
   async function handleBuscar(e: React.FormEvent) {
@@ -77,6 +74,7 @@ export default function AdminImportarPage() {
     setOfertas([]);
     setIgnoradosPorFiltro(0);
     setResumo(null);
+    setSelecionados(new Set());
     const res = await buscarOfertas(url, 0, numPaginas);
     setLoading(false);
     if (res.ok) {
@@ -124,15 +122,59 @@ export default function AdminImportarPage() {
     }
   }
 
+  async function handleImportarSelecionados() {
+    if (selecionados.size === 0) return;
+    const ofertasSelecionadas = ofertas.filter((o) => selecionados.has(o.id_externo));
+    if (ofertasSelecionadas.length === 0) return;
+    
+    setSubindoId("__selecionados__");
+    setMensagem(null);
+    setResumo(null);
+    const res = await importarTodos(ofertasSelecionadas, 0);
+    setSubindoId(null);
+    setSelecionados(new Set());
+    setResumo({
+      atualizados: res.atualizados,
+      novos: res.novos,
+      ignorados: res.ignorados,
+      erros: res.erros,
+    });
+    if (res.erros.length > 0) {
+      setMensagem({ tipo: "erro", texto: `${res.erros.length} erro(s) durante a importação.` });
+    } else {
+      setMensagem({
+        tipo: "ok",
+        texto: `${res.atualizados} produtos atualizados e ${res.novos} novos criados (pendentes de info).`,
+      });
+    }
+  }
+
+  function toggleSelecionado(id: string) {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) {
+        novo.delete(id);
+      } else {
+        novo.add(id);
+      }
+      return novo;
+    });
+  }
+
+  function toggleSelecionarTodos() {
+    if (selecionados.size === ofertas.length) {
+      setSelecionados(new Set());
+    } else {
+      setSelecionados(new Set(ofertas.map((o) => o.id_externo)));
+    }
+  }
+
   async function handleSalvarPromocao(e: React.FormEvent) {
     e.preventDefault();
     setSalvandoPromo(true);
     setMsgPromo(null);
     try {
-      const dataIso =
-        promoFim && !Number.isNaN(Date.parse(promoFim))
-          ? new Date(promoFim).toISOString()
-          : null;
+      const dataIso = promoFim && !Number.isNaN(Date.parse(promoFim)) ? promoFim : null;
       const res = await salvarPromocaoOfertasEspeciais(promoNome, dataIso);
       if (res.ok) {
         setMsgPromo({
@@ -339,10 +381,9 @@ export default function AdminImportarPage() {
               <label className="mb-1 block text-sm font-medium text-zinc-300">
                 Data e hora de término
               </label>
-              <input
-                type="datetime-local"
+              <DateTimeInputBR
                 value={promoFim}
-                onChange={(e) => setPromoFim(e.target.value)}
+                onChange={setPromoFim}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -462,19 +503,39 @@ export default function AdminImportarPage() {
                   {ignoradosPorFiltro} itens ignorados por filtro (Expansão, Season Pass, etc.)
                 </span>
               )}
-              <button
-                type="button"
-                onClick={handleImportarTodos}
-                disabled={!!subindoId}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {subindoId === "__todos__" ? "Importando…" : `Importar todos (${ofertas.length})`}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {selecionados.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleImportarSelecionados}
+                    disabled={!!subindoId}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {subindoId === "__selecionados__" ? "Importando…" : `Importar selecionados (${selecionados.size})`}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleImportarTodos}
+                  disabled={!!subindoId}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {subindoId === "__todos__" ? "Importando…" : `Importar todos (${ofertas.length})`}
+                </button>
+              </div>
             </div>
             <div className="overflow-hidden rounded-xl border border-zinc-800">
               <table className="w-full border-collapse bg-zinc-900/50">
                 <thead>
                   <tr className="border-b border-zinc-800 text-left text-sm text-zinc-400">
+                    <th className="p-4 font-medium">
+                      <input
+                        type="checkbox"
+                        checked={selecionados.size === ofertas.length && ofertas.length > 0}
+                        onChange={toggleSelecionarTodos}
+                        className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
+                      />
+                    </th>
                     <th className="p-4 font-medium">Imagem</th>
                     <th className="p-4 font-medium">Jogo</th>
                     <th className="p-4 font-medium">Seu custo (50% do verde)</th>
@@ -487,8 +548,18 @@ export default function AdminImportarPage() {
                   {ofertas.map((oferta) => (
                     <tr
                       key={oferta.id_externo}
-                      className="border-b border-zinc-800/80 transition-colors hover:bg-zinc-800/30"
+                      className={`border-b border-zinc-800/80 transition-colors hover:bg-zinc-800/30 ${
+                        selecionados.has(oferta.id_externo) ? "bg-emerald-950/20" : ""
+                      }`}
                     >
+                      <td className="p-4">
+                        <input
+                          type="checkbox"
+                          checked={selecionados.has(oferta.id_externo)}
+                          onChange={() => toggleSelecionado(oferta.id_externo)}
+                          className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
+                        />
+                      </td>
                       <td className="p-4">
                         <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-zinc-800">
                           <Image

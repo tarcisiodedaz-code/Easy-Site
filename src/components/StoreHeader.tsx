@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 import { useCart } from "@/context/CartContext";
 import { createClient } from "@/lib/supabase/browser";
 import { StoreNav } from "./StoreNav";
+import { formatBRL } from "@/lib/utils/formatters";
 
 const WHATSAPP_NUMERO = "5579999204322";
 const WHATSAPP_MSG = "Olá! Vim pelo site e gostaria de mais informações.";
@@ -101,10 +102,6 @@ type StoreHeaderProps = {
   logoUrl?: string | null;
   categoriasMenu?: CategoriaMenuSimples[] | null;
 };
-
-function formatBRL(value: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-}
 
 export function StoreHeader({ logoUrl, categoriasMenu }: StoreHeaderProps = {}) {
   const { count, total } = useCart();

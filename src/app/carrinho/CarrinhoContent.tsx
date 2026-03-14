@@ -7,15 +7,9 @@ import { useCart } from "@/context/CartContext";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
 import { MeusPedidosTab } from "./MeusPedidosTab";
 import { createClient } from "@/lib/supabase/browser";
+import { formatBRL } from "@/lib/utils/formatters";
 
 const WHATSAPP_NUMERO = "5579999204322";
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valor);
-}
 
 type Tab = "carrinho" | "pedidos";
 
@@ -33,11 +27,11 @@ export function CarrinhoContent() {
   }, []);
 
   const linhasPedido = itens
-    .map((i) => `${i.nome} x${i.quantidade} - ${formatarPreco(i.preco * i.quantidade)}`)
+    .map((i) => `${i.nome} x${i.quantidade} - ${formatBRL(i.preco * i.quantidade)}`)
     .join("\n");
   const mensagemWhatsApp = isEmpty
     ? "Olá! Gostaria de mais informações sobre os produtos."
-    : `Olá! Gostaria de finalizar meu pedido:\n\n${linhasPedido}\n\nTotal: ${formatarPreco(total)}`;
+    : `Olá! Gostaria de finalizar meu pedido:\n\n${linhasPedido}\n\nTotal: ${formatBRL(total)}`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -146,7 +140,7 @@ export function CarrinhoContent() {
                         {item.nome}
                       </Link>
                       <p className="text-sm text-zinc-500">
-                        {formatarPreco(item.preco)} × {item.quantidade}
+                        {formatBRL(item.preco)} × {item.quantidade}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -164,7 +158,7 @@ export function CarrinhoContent() {
                         ))}
                       </select>
                       <span className="font-semibold text-[var(--accent)]">
-                        {formatarPreco(item.preco * item.quantidade)}
+                        {formatBRL(item.preco * item.quantidade)}
                       </span>
                       <button
                         type="button"
@@ -189,7 +183,7 @@ export function CarrinhoContent() {
               <div className="mt-4 flex justify-between text-zinc-400">
                 <span>Total ({itens.reduce((s, i) => s + i.quantidade, 0)} itens)</span>
                 <span className="text-xl font-bold text-white">
-                  {formatarPreco(total)}
+                  {formatBRL(total)}
                 </span>
               </div>
               <Link

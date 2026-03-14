@@ -243,7 +243,7 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-6 text-lg font-semibold text-white">Capa do produto</h2>
         <p className="mb-3 text-xs text-amber-400/90">
-          Dimensão recomendada: 300×400 px (proporção 3:4) — padronização estilo PS Store.
+          Dimensão recomendada: 400×500 px (proporção 4:5) — padronização estilo PS Store.
         </p>
         <div className="flex flex-wrap items-start gap-4">
           <label className="cursor-pointer rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700">

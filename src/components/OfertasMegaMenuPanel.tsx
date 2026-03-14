@@ -2,22 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, memo } from "react";
 import { CountdownTimer } from "./CountdownTimer";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
+import { formatBRL, calcularParcela } from "@/lib/utils/formatters";
 import type { ProdutoLoja } from "@/lib/supabase";
 
 const MINI_CARD_WIDTH = 168;
 const MINI_GAP = 12;
-const MINI_VISIBLE_WIDTH = MINI_CARD_WIDTH * 4 + MINI_GAP * 3; // 708px - precisa caber na coluna direita
+const MINI_VISIBLE_WIDTH = MINI_CARD_WIDTH * 4 + MINI_GAP * 3;
 const AUTOPLAY_MS = 3000;
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valor);
-}
 
 function temOfertaValida(produto: ProdutoLoja): boolean {
   const promo = produto.preco_promocional;
@@ -28,11 +22,6 @@ function temOfertaValida(produto: ProdutoLoja): boolean {
   if (inicio != null && now < inicio) return false;
   if (fim != null && now > fim) return false;
   return true;
-}
-
-function calcularParcela(preco: number, taxa: number = 5, parcelas: number = 12): number {
-  const precoComTaxa = preco + (preco * taxa / 100);
-  return precoComTaxa / parcelas;
 }
 
 function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => void }) {
@@ -87,18 +76,18 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
           {/* Preço de tabela - riscado */}
           {precoDeNum > precoExibirNum && (
             <p className="text-[10px] text-zinc-400 line-through">
-              De {formatarPreco(precoDeNum)}
+              De {formatBRL(precoDeNum)}
             </p>
           )}
           
           {/* Preço PIX - destaque azul (cyan) */}
           <p className="text-sm font-bold text-cyan-600">
-            {formatarPreco(precoExibirNum)} <span className="text-xs font-medium">no PIX</span>
+            {formatBRL(precoExibirNum)} <span className="text-xs font-medium">no PIX</span>
           </p>
           
           {/* Parcelamento com 5% */}
           <p className="text-[10px] text-zinc-500">
-            ou 12x de {formatarPreco(parcela)} no cartão
+            ou 12x de {formatBRL(parcela)} no cartão
           </p>
         </div>
       </div>

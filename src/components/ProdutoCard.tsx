@@ -1,19 +1,14 @@
+import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ProdutoLoja } from "@/lib/supabase";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
+import { formatBRL, calcularParcela as calcParcela } from "@/lib/utils/formatters";
 
 type ProdutoCardProps = {
   produto: ProdutoLoja;
   taxaCartao?: number;
 };
-
-function formatarPreco(valor: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valor);
-}
 
 function PlatformIcons() {
   return (
@@ -46,12 +41,7 @@ function temOfertaValida(produto: ProdutoLoja): boolean {
   return true;
 }
 
-function calcularParcela(preco: number, taxa: number, parcelas: number = 12): number {
-  const precoComTaxa = preco + (preco * taxa / 100);
-  return precoComTaxa / parcelas;
-}
-
-export function ProdutoCard({ produto, taxaCartao = 5 }: ProdutoCardProps) {
+function ProdutoCardComponent({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80";
@@ -67,7 +57,7 @@ export function ProdutoCard({ produto, taxaCartao = 5 }: ProdutoCardProps) {
     precoDeNum > 0 && precoExibirNum < precoDeNum
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
       : 0;
-  const parcela = calcularParcela(precoExibirNum, taxaCartao);
+  const parcela = calcParcela(precoExibirNum, taxaCartao);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
@@ -106,21 +96,21 @@ export function ProdutoCard({ produto, taxaCartao = 5 }: ProdutoCardProps) {
           {/* Preço Original (riscado) */}
           {precoDeNum > precoExibirNum && (
             <p className="mt-2 text-sm text-zinc-500 line-through">
-              De {formatarPreco(precoDeNum)}
+              De {formatBRL(precoDeNum)}
             </p>
           )}
           
           {/* Preço PIX (destaque verde) */}
           <p className="mt-1">
             <span className="text-xl font-bold text-emerald-400">
-              {formatarPreco(precoExibirNum)}
+              {formatBRL(precoExibirNum)}
             </span>
             <span className="ml-1 text-sm font-medium text-emerald-400">no PIX</span>
           </p>
           
           {/* Parcelamento */}
           <p className="mt-1 text-sm text-white/80">
-            Ou 12x de {formatarPreco(parcela)} no cartão*
+            Ou 12x de {formatBRL(parcela)} no cartão*
           </p>
         </div>
       </Link>
@@ -145,8 +135,10 @@ export function ProdutoCard({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   );
 }
 
+export const ProdutoCard = memo(ProdutoCardComponent);
+
 /** Card V2 para vitrines - redesenhado com hierarquia de preços */
-export function ProdutoCardV2({ produto, taxaCartao = 5 }: ProdutoCardProps) {
+function ProdutoCardV2Component({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80";
@@ -163,7 +155,7 @@ export function ProdutoCardV2({ produto, taxaCartao = 5 }: ProdutoCardProps) {
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
       : 0;
   const slug = (produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo;
-  const parcela = calcularParcela(precoExibirNum, taxaCartao);
+  const parcela = calcParcela(precoExibirNum, taxaCartao);
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
@@ -202,21 +194,21 @@ export function ProdutoCardV2({ produto, taxaCartao = 5 }: ProdutoCardProps) {
             {/* Preço Original riscado */}
             {precoDeNum > precoExibirNum && (
               <p className="text-xs text-zinc-500 line-through">
-                De {formatarPreco(precoDeNum)}
+                De {formatBRL(precoDeNum)}
               </p>
             )}
             
             {/* Preço PIX */}
             <p>
               <span className="text-lg font-bold text-emerald-400">
-                {formatarPreco(precoExibirNum)}
+                {formatBRL(precoExibirNum)}
               </span>
               <span className="ml-1 text-xs font-medium text-emerald-400">no PIX</span>
             </p>
             
             {/* Parcelamento */}
             <p className="text-xs text-white/80">
-              Ou 12x de {formatarPreco(parcela)} no cartão*
+              Ou 12x de {formatBRL(parcela)} no cartão*
             </p>
           </div>
         </div>
@@ -241,3 +233,5 @@ export function ProdutoCardV2({ produto, taxaCartao = 5 }: ProdutoCardProps) {
     </article>
   );
 }
+
+export const ProdutoCardV2 = memo(ProdutoCardV2Component);
