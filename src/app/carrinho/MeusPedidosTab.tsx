@@ -93,7 +93,7 @@ function PedidoCard({ pedido, expandido, onToggle }: { pedido: Pedido; expandido
             <div key={item.id} className="flex gap-4">
               <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded bg-zinc-700">
                 <Image
-                  src={getImagemAltaResolucao(`https://store.playstation.com/store/api/chihiro/00_09_000/container/BR/pt/${item.produto_id}/image`) || "/placeholder.png"}
+                  src="/placeholder.png"
                   alt={item.produto_nome}
                   fill
                   className="object-cover"

@@ -48,6 +48,15 @@ export type OfertasEspeciaisConfig = {
   dataFinal: string;
 } | null;
 
+/** Notificação de novo pedido no WhatsApp do lojista (CallMeBot – gratuito). */
+export type WhatsappNotificacaoConfig = {
+  ativo: boolean;
+  /** Número com DDD, sem + (ex.: 5579999204322). */
+  numero: string;
+  /** Chave recebida ao ativar CallMeBot no WhatsApp. */
+  apikey: string;
+} | null;
+
 /** Configuração do Mercado Pago (Checkout Transparente). Access Token só no servidor. */
 export type MercadoPagoConfig = {
   publicKey: string;
@@ -80,6 +89,8 @@ export type LojaConfigMap = {
   icone_ps5: IconePS5Config;
   /** Banner divisor entre carousel e pré-venda */
   banner_divisor: BannerDivisorConfig;
+  /** Notificação de pedido no seu WhatsApp (CallMeBot). */
+  whatsapp_notificacao: WhatsappNotificacaoConfig;
 };
 
 const DEFAULTS: LojaConfigMap = {
@@ -135,6 +146,7 @@ const DEFAULTS: LojaConfigMap = {
       },
     ],
   } as BannerDivisorConfig,
+  whatsapp_notificacao: null as WhatsappNotificacaoConfig,
 };
 
 export { DEFAULTS };

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
     const { data: pedido, error: errPedido } = await supabase
       .from("pedidos")
-      .select("id, numero, total, cliente_nome, cliente_email, situacao")
+      .select("id, numero, total, cliente_nome, cliente_email, cliente_cpf, situacao")
       .eq("id", pedidoId)
       .single();
 
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     const parcelas = Math.max(1, Math.min(Number(installments) || 1, 24));
     const nome = (payer_nome ?? pedido.cliente_nome ?? "").trim() || "Cliente";
+    const cpf = (pedido as { cliente_cpf?: string | null }).cliente_cpf ?? null;
 
     const result = await criarPagamentoCartao({
       transaction_amount: Number(pedido.total),
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       installments: parcelas,
       payer_email: pedido.cliente_email,
       payer_nome: nome,
+      payer_cpf: cpf,
       description: `Pedido #${pedido.numero} - Easy Games`,
       pedido_id: pedido.id,
     });

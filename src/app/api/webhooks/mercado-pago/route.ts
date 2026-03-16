@@ -9,6 +9,8 @@ import {
   descontarEstoqueDoPedido,
 } from "@/lib/pedidos";
 import { enviarEmailEntrega } from "@/lib/email-entrega";
+import { getLojaConfig } from "@/lib/loja-config";
+import { notificarPedidoAprovadoWhatsApp } from "@/lib/whatsapp-notificacao";
 
 /**
  * Webhook Mercado Pago: notificações de pagamento (payment.approved, payment.rejected, payment.pending).
@@ -55,6 +57,13 @@ export async function POST(request: NextRequest) {
               const pedidoAtualizado = await getPedidoPorId(pedidoId);
               if (pedidoAtualizado && (await enviarEmailEntrega(pedidoAtualizado))) {
                 await marcarEmailEnviado(pedidoId);
+              }
+              const whatsappConfig = await getLojaConfig("whatsapp_notificacao");
+              if (whatsappConfig?.ativo && whatsappConfig?.numero && whatsappConfig?.apikey) {
+                void notificarPedidoAprovadoWhatsApp(pedidoAtualizado.numero, {
+                  callmebotNumero: whatsappConfig.numero,
+                  callmebotApikey: whatsappConfig.apikey,
+                });
               }
             }
           }

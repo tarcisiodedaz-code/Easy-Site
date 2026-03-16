@@ -7,15 +7,16 @@ type Item = { produto_id: string; produto_nome: string; preco_unitario: number; 
 
 /**
  * Cria um pedido (pendente). Se forma_pagamento for "pix", gera PIX no Mercado Pago e retorna QR/Copia e Cola.
- * Body: { cliente_nome, cliente_email, cliente_cpf?, forma_pagamento: "pix" | "credit_card", itens: Item[] }
+ * Body: { cliente_nome, cliente_email, cliente_cpf?, cliente_telefone?, forma_pagamento, itens: Item[] }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { cliente_nome, cliente_email, cliente_cpf, forma_pagamento, itens } = body as {
+    const { cliente_nome, cliente_email, cliente_cpf, cliente_telefone, forma_pagamento, itens } = body as {
       cliente_nome: string;
       cliente_email: string;
       cliente_cpf?: string;
+      cliente_telefone?: string;
       forma_pagamento: "pix" | "credit_card" | "mercado_pago";
       itens: Item[];
     };
@@ -37,6 +38,9 @@ export async function POST(request: NextRequest) {
     };
     if (cliente_cpf != null && String(cliente_cpf).trim()) {
       insertPayload.cliente_cpf = String(cliente_cpf).trim();
+    }
+    if (cliente_telefone != null && String(cliente_telefone).trim()) {
+      insertPayload.cliente_telefone = String(cliente_telefone).trim().replace(/\D/g, "").slice(0, 15);
     }
 
     let supabase;
@@ -69,19 +73,38 @@ export async function POST(request: NextRequest) {
       }))
     );
 
-    // Cópia do pedido no WhatsApp do lojista (se Twilio ou webhook configurados)
-    void notificarPedidoWhatsApp({
-      numero: pedido.numero,
-      cliente_nome: cliente_nome.trim(),
-      cliente_email: cliente_email.trim(),
-      total,
-      forma_pagamento: forma,
-      itens: itens.map((i) => ({
-        produto_nome: i.produto_nome,
-        preco_unitario: i.preco_unitario,
-        quantidade: i.quantidade,
-      })),
-    });
+    // Cópia do pedido no WhatsApp do lojista (CallMeBot config no admin, ou Twilio/webhook por env)
+    // Lê com admin para não depender de RLS da tabela loja_config
+    const { data: configRow } = await supabase
+      .from("loja_config")
+      .select("valor")
+      .eq("chave", "whatsapp_notificacao")
+      .maybeSingle();
+    const whatsappConfig = configRow?.valor as { ativo?: boolean; numero?: string; apikey?: string } | null;
+    const opcoes =
+      whatsappConfig?.ativo && whatsappConfig?.numero?.trim() && whatsappConfig?.apikey?.trim()
+        ? { callmebotNumero: whatsappConfig.numero.trim(), callmebotApikey: whatsappConfig.apikey.trim() }
+        : undefined;
+    if (!opcoes?.callmebotNumero || !opcoes?.callmebotApikey) {
+      console.warn("WhatsApp notificação: config não encontrada ou inativa em loja_config (chave whatsapp_notificacao). Verifique Admin → Configurações → Notificações.");
+    }
+    await notificarPedidoWhatsApp(
+      {
+        numero: pedido.numero,
+        cliente_nome: cliente_nome.trim(),
+        cliente_email: cliente_email.trim(),
+        cliente_telefone: cliente_telefone?.trim() || null,
+        situacao: "pendente",
+        total,
+        forma_pagamento: forma,
+        itens: itens.map((i) => ({
+          produto_nome: i.produto_nome,
+          preco_unitario: i.preco_unitario,
+          quantidade: i.quantidade,
+        })),
+      },
+      opcoes
+    );
 
     if (forma_pagamento === "pix") {
       const pix = await criarPagamentoPix({

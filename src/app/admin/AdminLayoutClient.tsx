@@ -196,6 +196,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               </button>
               {configAberto && (
                 <div className="mt-0.5 flex flex-col gap-0">
+                  {navLink("/admin/configuracoes/notificacoes", pathname, "Notificações")}
                   {navLink("/admin/configuracoes/pagamentos", pathname, "Pagamentos")}
                 </div>
               )}

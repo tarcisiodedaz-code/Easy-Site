@@ -138,6 +138,7 @@ type CriarPagamentoCartaoParams = {
   installments: number;
   payer_email: string;
   payer_nome: string;
+  payer_cpf?: string | null;
   description: string;
   pedido_id: string;
 };
@@ -172,6 +173,14 @@ export async function criarPagamentoCartao(
           email: params.payer_email,
           first_name: params.payer_nome.split(/\s+/)[0] || params.payer_nome,
           last_name: params.payer_nome.split(/\s+/).slice(1).join(" ") || ".",
+          ...(params.payer_cpf
+            ? {
+                identification: {
+                  type: "CPF",
+                  number: String(params.payer_cpf).replace(/\D/g, "").slice(0, 11),
+                },
+              }
+            : {}),
         },
         description: params.description,
         metadata: { pedido_id: params.pedido_id },

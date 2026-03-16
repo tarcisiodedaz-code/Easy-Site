@@ -10,6 +10,8 @@ export type Pedido = {
   cliente_email: string;
   /** CPF do comprador (opcional no schema antigo). */
   cliente_cpf?: string | null;
+  /** Telefone/WhatsApp do comprador (opcional). */
+  cliente_telefone?: string | null;
   total: number;
   situacao: SituacaoPedido;
   forma_pagamento: FormaPagamento;
