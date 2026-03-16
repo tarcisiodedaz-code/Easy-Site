@@ -136,6 +136,14 @@ export async function POST(request: NextRequest) {
         payer_cpf: cliente_cpf != null ? String(cliente_cpf).replace(/\D/g, "").slice(0, 11) || null : null,
         description: `Pedido #${pedido.numero} - Easy Games`,
         pedido_id: pedido.id,
+        items: itens.map((i) => ({
+          id: i.produto_id,
+          title: i.produto_nome,
+          quantity: i.quantidade,
+          unit_price: i.preco_unitario,
+          category_id: "games",
+          description: i.produto_nome,
+        })),
       });
       if (pix.ok && pix.payment_id) {
         await supabase
