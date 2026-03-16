@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
                 await marcarEmailEnviado(pedidoId);
               }
               const whatsappConfig = await getLojaConfig("whatsapp_notificacao");
-              if (whatsappConfig?.ativo && whatsappConfig?.numero && whatsappConfig?.apikey) {
+              if (pedidoAtualizado && whatsappConfig?.ativo && whatsappConfig?.numero && whatsappConfig?.apikey) {
                 void notificarPedidoAprovadoWhatsApp(pedidoAtualizado.numero, {
                   callmebotNumero: whatsappConfig.numero,
                   callmebotApikey: whatsappConfig.apikey,
