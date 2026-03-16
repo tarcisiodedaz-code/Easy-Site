@@ -8,6 +8,8 @@ function traduzirStatusDetailRejeicao(statusDetail: string): string {
     rejected_insufficient_data: "Dados insuficientes para processar o PIX. Verifique nome, e-mail e CPF.",
     rejected_by_bank: "Pagamento recusado pelo banco. Tente outro meio de pagamento.",
     rejected_by_regulations: "Pagamento recusado por política do Mercado Pago.",
+    rejected_high_risk:
+      "O Mercado Pago identificou risco nesta transação e não liberou o PIX. Tente pagar com cartão ou entre em contato com o suporte da loja.",
   };
   return map[statusDetail] ?? `Pagamento recusado. (${statusDetail})`;
 }

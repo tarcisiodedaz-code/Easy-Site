@@ -28,7 +28,7 @@ export default async function LoginPage({
         <p className="mt-1 text-zinc-400">
           Para continuar sua compra, faça login ou crie uma conta.
         </p>
-        <LoginForm redirect={redirect ?? "/carrinho"} initialError={erroParam === "auth" ? "Falha ao entrar com Google. Tente novamente." : undefined} />
+        <LoginForm redirect={redirect ?? "/"} initialError={erroParam === "auth" ? "Falha ao entrar com Google. Tente novamente." : undefined} />
       </main>
       <StoreFooter />
     </div>

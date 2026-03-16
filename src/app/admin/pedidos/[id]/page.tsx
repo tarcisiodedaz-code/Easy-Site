@@ -73,6 +73,12 @@ export default async function DetalhePedidoPage({
         <div>
           <h2 className="text-sm font-medium text-zinc-500">Pagamento</h2>
           <p className="mt-1 text-white">{pedido.forma_pagamento === "pix" ? "Pix" : "Mercado Pago"}</p>
+          {pedido.payment_id && (
+            <p className="mt-1 text-xs text-zinc-500">
+              Payment ID (MP): <span className="font-mono text-zinc-400">{pedido.payment_id}</span>
+              {" — use no painel do Mercado Pago em \"Avaliar qualidade\" se solicitado."}
+            </p>
+          )}
         </div>
         <div>
           <h2 className="text-sm font-medium text-zinc-500">Itens</h2>
