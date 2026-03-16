@@ -74,9 +74,22 @@ export async function testarConexaoMercadoPago(): Promise<{ ok: boolean; mensage
 type CriarPagamentoPixParams = {
   transaction_amount: number;
   payer_email: string;
+  payer_nome?: string | null;
+  payer_cpf?: string | null;
   description: string;
   pedido_id: string;
 };
+
+/** Monta mensagem de erro a partir da resposta da API do Mercado Pago. */
+function extrairErroMp(data: Record<string, unknown>, status: number): string {
+  const msg = data.message ?? data.error;
+  if (typeof msg === "string" && msg.trim()) return msg.trim();
+  const cause = data.cause as Array<{ description?: string }> | undefined;
+  if (Array.isArray(cause) && cause[0]?.description) return cause[0].description;
+  const statusDetail = data.status_detail;
+  if (typeof statusDetail === "string" && statusDetail.trim()) return statusDetail.trim();
+  return `Erro ${status}`;
+}
 
 /** Cria um pagamento PIX no Mercado Pago. */
 export async function criarPagamentoPix(
@@ -94,6 +107,13 @@ export async function criarPagamentoPix(
     return { ok: false, erro: "Mercado Pago não configurado." };
   }
   try {
+    const nome = params.payer_nome?.trim() || "";
+    const cpf = params.payer_cpf != null ? String(params.payer_cpf).replace(/\D/g, "").slice(0, 11) : "";
+    const payer: Record<string, unknown> = {
+      email: params.payer_email,
+      ...(nome ? { first_name: nome.split(/\s+/)[0] || nome, last_name: nome.split(/\s+/).slice(1).join(" ") || "." } : {}),
+      ...(cpf.length === 11 ? { identification: { type: "CPF", number: cpf } } : {}),
+    };
     const res = await fetch(`${MP_API}/v1/payments`, {
       method: "POST",
       headers: {
@@ -104,25 +124,26 @@ export async function criarPagamentoPix(
       body: JSON.stringify({
         transaction_amount: params.transaction_amount,
         payment_method_id: "pix",
-        payer: { email: params.payer_email },
+        payer,
         description: params.description,
         metadata: { pedido_id: params.pedido_id },
       }),
     });
-    const data = await res.json();
+    const data = (await res.json()) as Record<string, unknown>;
     if (data.id) {
-      const poi = data.point_of_interaction?.transaction_data ?? {};
+      const poi = (data.point_of_interaction as Record<string, unknown>)?.transaction_data as Record<string, unknown> | undefined;
+      const poiSafe = poi ?? {};
       return {
         ok: true,
         payment_id: String(data.id),
-        qr_code_base64: poi.qr_code_base64 ?? undefined,
-        qr_code: poi.qr_code ?? undefined,
-        ticket_url: poi.ticket_url ?? undefined,
+        qr_code_base64: (poiSafe.qr_code_base64 as string) ?? undefined,
+        qr_code: (poiSafe.qr_code as string) ?? undefined,
+        ticket_url: (poiSafe.ticket_url as string) ?? undefined,
       };
     }
     return {
       ok: false,
-      erro: data.message || data.error || `Erro ${res.status}`,
+      erro: extrairErroMp(data, res.status),
     };
   } catch (e) {
     return {
@@ -207,17 +228,24 @@ export async function criarPagamentoCartao(
   }
 }
 
-/** Consulta status de um pagamento no MP. */
-export async function consultarPagamento(paymentId: string): Promise<{ status?: string; erro?: string }> {
+/** Consulta status de um pagamento no MP. Retorna status e status_detail (motivo de rejeição, etc.). */
+export async function consultarPagamento(
+  paymentId: string
+): Promise<{ status?: string; status_detail?: string; erro?: string }> {
   const token = await getAccessTokenForPayment();
   if (!token) return { erro: "Mercado Pago não configurado." };
   try {
     const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const data = await res.json();
-    if (data.status) return { status: data.status };
-    return { erro: data.message || `Erro ${res.status}` };
+    const data = (await res.json()) as Record<string, unknown>;
+    if (data.status) {
+      return {
+        status: data.status as string,
+        status_detail: typeof data.status_detail === "string" ? data.status_detail : undefined,
+      };
+    }
+    return { erro: (data.message as string) || `Erro ${res.status}` };
   } catch (e) {
     return { erro: e instanceof Error ? e.message : "Erro ao consultar pagamento." };
   }

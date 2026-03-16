@@ -132,6 +132,8 @@ export async function POST(request: NextRequest) {
       const pix = await criarPagamentoPix({
         transaction_amount: total,
         payer_email: cliente_email.trim(),
+        payer_nome: cliente_nome?.trim() || null,
+        payer_cpf: cliente_cpf != null ? String(cliente_cpf).replace(/\D/g, "").slice(0, 11) || null : null,
         description: `Pedido #${pedido.numero} - Easy Games`,
         pedido_id: pedido.id,
       });

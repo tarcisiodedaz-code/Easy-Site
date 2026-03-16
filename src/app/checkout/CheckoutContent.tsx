@@ -142,7 +142,7 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
           setStep("success");
           clearInterval(t);
         } else if (d.situacao === "rejeitado") {
-          setErro("Pagamento recusado.");
+          setErro(d.mensagem ?? "Pagamento recusado.");
           clearInterval(t);
         }
       } catch {
