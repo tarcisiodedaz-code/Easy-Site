@@ -47,19 +47,6 @@ export default async function ProdutoSlugPage({ params }: Props) {
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80";
 
-  const promo = produto.preco_promocional;
-  const temPromoValida =
-    promo != null &&
-    Number(promo) > 0 &&
-    (produto.oferta_inicio ? new Date(produto.oferta_inicio).getTime() <= Date.now() : true) &&
-    (produto.oferta_fim ? new Date(produto.oferta_fim).getTime() >= Date.now() : true);
-  const precoExibir = temPromoValida && promo != null ? Number(promo) : produto.preco;
-  const precoRiscado = temPromoValida ? produto.preco : null;
-  const percentualDesconto =
-    temPromoValida && Number(produto.preco) > 0 && promo != null && Number(promo) > 0
-      ? Math.round(((Number(produto.preco) - Number(promo)) / Number(produto.preco)) * 100)
-      : 0;
-
   const produtoComDescricao = produto as ProdutoLoja & { descricao?: string | null };
   const descricaoHtml = produtoComDescricao.descricao ?? "";
   const informacoesAdicionaisHtml =
@@ -82,9 +69,6 @@ export default async function ProdutoSlugPage({ params }: Props) {
         {/* Área de destaque com seletor de versão */}
         <ProdutoPageClient
           produto={produto as ProdutoLoja & { descricao?: string | null }}
-          precoExibir={precoExibir}
-          precoRiscado={precoRiscado}
-          percentualDesconto={percentualDesconto}
           imagemUrl={imagemUrl}
           informacoesAdicionaisHtml={informacoesAdicionaisHtml}
           descricaoHtml={descricaoHtml}

@@ -29,8 +29,21 @@ export async function cadastrarProduto(formData: FormData) {
 
   const precoVenda = Number((formData.get("preco") as string)?.replace(",", ".")) || 0;
   const precoOriginal = Number((formData.get("preco_original") as string)?.replace(",", ".")) ?? precoVenda;
-  const precoCusto = formData.get("preco_custo") ? Number((formData.get("preco_custo") as string).replace(",", ".")) : null;
+  const usarPromoPorConsole = formData.get("usar_preco_promocional_por_console") === "true";
+  const precoCustoRaw = formData.get("preco_custo") ? Number((formData.get("preco_custo") as string).replace(",", ".")) : null;
+  const precoCustoPs4 = formData.get("preco_custo_ps4") ? Number((formData.get("preco_custo_ps4") as string).replace(",", ".")) : null;
+  const precoCustoPs5 = formData.get("preco_custo_ps5") ? Number((formData.get("preco_custo_ps5") as string).replace(",", ".")) : null;
+  const precoCusto = usarPromoPorConsole
+    ? (precoCustoPs4 != null && precoCustoPs5 != null ? Math.min(precoCustoPs4, precoCustoPs5) : precoCustoPs4 ?? precoCustoPs5 ?? precoCustoRaw)
+    : precoCustoRaw;
+  const precoCustoAnteriorRaw = (formData.get("preco_custo_anterior") as string)?.trim();
+  const preco_custo_anterior = precoCustoAnteriorRaw ? Number(precoCustoAnteriorRaw.replace(",", ".")) : null;
   const precoPromocional = formData.get("preco_promocional") ? Number((formData.get("preco_promocional") as string).replace(",", ".")) : null;
+  const precoPromocionalPs4 = formData.get("preco_promocional_ps4") ? Number((formData.get("preco_promocional_ps4") as string).replace(",", ".")) : null;
+  const precoPromocionalPs5 = formData.get("preco_promocional_ps5") ? Number((formData.get("preco_promocional_ps5") as string).replace(",", ".")) : null;
+  const quantidadeEstoque = Number(formData.get("quantidade_estoque") || 0);
+  const quantidadeEstoquePs4 = formData.get("quantidade_estoque_ps4") ? Number(formData.get("quantidade_estoque_ps4")) : null;
+  const quantidadeEstoquePs5 = formData.get("quantidade_estoque_ps5") ? Number(formData.get("quantidade_estoque_ps5")) : null;
 
   const categoriaIds = (formData.getAll("categoria_ids") as string[]).filter(Boolean);
 
@@ -43,11 +56,19 @@ export async function cadastrarProduto(formData: FormData) {
       visivel_site: formData.get("visivel_site") === "true",
       em_destaque: formData.get("em_destaque") === "true",
       preco_custo: precoCusto,
+      preco_custo_ps4: usarPromoPorConsole ? precoCustoPs4 : null,
+      preco_custo_ps5: usarPromoPorConsole ? precoCustoPs5 : null,
+      preco_custo_anterior: preco_custo_anterior ?? precoCusto,
       preco: precoVenda,
-      preco_promocional: precoPromocional,
+      preco_promocional: !usarPromoPorConsole ? precoPromocional : null,
+      preco_promocional_ps4: usarPromoPorConsole ? precoPromocionalPs4 : null,
+      preco_promocional_ps5: usarPromoPorConsole ? precoPromocionalPs5 : null,
+      usar_preco_promocional_por_console: usarPromoPorConsole,
       preco_original: precoOriginal,
       gerenciar_estoque: formData.get("gerenciar_estoque") === "true",
-      quantidade_estoque: Number(formData.get("quantidade_estoque") || 0),
+      quantidade_estoque: quantidadeEstoque,
+      quantidade_estoque_ps4: quantidadeEstoquePs4,
+      quantidade_estoque_ps5: quantidadeEstoquePs5,
       imagem_url: imagemUrl,
       link_video: (formData.get("link_video") as string)?.trim() || null,
       slug: slug || null,
@@ -55,6 +76,8 @@ export async function cadastrarProduto(formData: FormData) {
       subcategoria_id: null,
       id_externo: idExterno,
       url_origem: null,
+      disponivel_ps4: formData.get("disponivel_ps4") !== "false",
+      disponivel_ps5: formData.get("disponivel_ps5") !== "false",
     })
     .select("id")
     .single();

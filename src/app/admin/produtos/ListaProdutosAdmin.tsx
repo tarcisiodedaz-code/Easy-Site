@@ -5,8 +5,11 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import {
   moverParaLixeira,
+  moverParaLixeiraEmMassa,
   encerrarPromocoesSelecionadas,
   limparTodasOfertas,
+  desativarOfertasEstoque,
+  desativarOfertasPlayStation,
   toggleVitrineProduto,
   toggleDestaqueProduto,
   type ProdutoAdminRow,
@@ -28,6 +31,7 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [vitrineLoadingId, setVitrineLoadingId] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   // Estados dos filtros
   const [filtroBusca, setFiltroBusca] = useState("");
@@ -162,6 +166,94 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
     }
   }
 
+  async function handleDesativarOfertasEstoque() {
+    if (
+      !confirm(
+        "Tirar da aba Ofertas todos os produtos em oferta de origem Estoque? Será removida a categoria Ofertas e o preço promocional. O preço de custo volta a ser o preço de custo base. O produto permanece ativo com o preço de venda atual."
+      )
+    )
+      return;
+    setBulkLoading(true);
+    setMensagem(null);
+    const res = await desativarOfertasEstoque();
+    setBulkLoading(false);
+    if (res.ok) {
+      setProdutos((prev) =>
+        prev.map((p) => {
+          const idExterno = (p as { id_externo?: string | null }).id_externo;
+          const temPromo =
+            (p.preco_promocional != null && Number(p.preco_promocional) > 0) ||
+            (p as { preco_promocional_ps4?: number | null }).preco_promocional_ps4 != null ||
+            (p as { preco_promocional_ps5?: number | null }).preco_promocional_ps5 != null;
+          if (idExterno?.startsWith("estoque-") && temPromo) {
+              const base = (p as { preco_custo_anterior?: number | null }).preco_custo_anterior ?? null;
+              return {
+                ...p,
+                preco_promocional: null,
+                preco_promocional_ps4: null,
+                preco_promocional_ps5: null,
+                oferta_inicio: null,
+                oferta_fim: null,
+                preco_custo: base,
+                preco_custo_ps4: null,
+                preco_custo_ps5: null,
+                gerenciar_estoque: false,
+                categoria_nome: p.categoria_nome === "Ofertas" ? null : p.categoria_nome,
+              };
+            }
+          return p;
+        })
+      );
+      setMensagem({ tipo: "ok", texto: `${res.count ?? 0} oferta(s) Estoque removida(s) da aba Ofertas. Preço de custo base restaurado.` });
+    } else {
+      setMensagem({ tipo: "erro", texto: res.erro ?? "Erro ao remover ofertas." });
+    }
+  }
+
+  async function handleDesativarOfertasPlayStation() {
+    if (
+      !confirm(
+        "Tirar da aba Ofertas todos os produtos em oferta de origem PlayStation? Será removida a categoria Ofertas e o preço promocional. O preço de custo volta a ser o preço de custo base. O produto permanece ativo com o preço de venda atual."
+      )
+    )
+      return;
+    setBulkLoading(true);
+    setMensagem(null);
+    const res = await desativarOfertasPlayStation();
+    setBulkLoading(false);
+    if (res.ok) {
+      setProdutos((prev) =>
+        prev.map((p) => {
+          const urlOrigem = (p as { url_origem?: string | null }).url_origem?.toLowerCase() ?? "";
+          const temPromo =
+            (p.preco_promocional != null && Number(p.preco_promocional) > 0) ||
+            (p as { preco_promocional_ps4?: number | null }).preco_promocional_ps4 != null ||
+            (p as { preco_promocional_ps5?: number | null }).preco_promocional_ps5 != null;
+          if (urlOrigem.includes("playstation") && temPromo) {
+              const base = (p as { preco_custo_anterior?: number | null }).preco_custo_anterior ?? null;
+              return {
+                ...p,
+                preco_promocional: null,
+                preco_promocional_ps4: null,
+                preco_promocional_ps5: null,
+                oferta_inicio: null,
+                oferta_fim: null,
+                preco_custo: base,
+                preco_custo_ps4: null,
+                preco_custo_ps5: null,
+                gerenciar_estoque: false,
+                categoria_nome: p.categoria_nome === "Ofertas" ? null : p.categoria_nome,
+              };
+            }
+          return p;
+        })
+      );
+      setMensagem({ tipo: "ok", texto: `${res.count ?? 0} oferta(s) PlayStation removida(s) da aba Ofertas. Preço de custo base restaurado.` });
+    } else {
+      setMensagem({ tipo: "erro", texto: res.erro ?? "Erro ao remover ofertas." });
+    }
+  }
+
   async function handleToggleVitrine(id: string, campo: "is_lancamento" | "is_mais_vendido", valorAtual: boolean) {
     setVitrineLoadingId(id);
     const res = await toggleVitrineProduto(id, campo, !valorAtual);
@@ -199,6 +291,22 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
       setMensagem({ tipo: "ok", texto: "Produto movido para a lixeira." });
     } else {
       setMensagem({ tipo: "erro", texto: res.erro ?? "Erro ao mover." });
+    }
+  }
+
+  async function handleExcluirSelecionados() {
+    setShowConfirmDelete(false);
+    setBulkLoading(true);
+    setMensagem(null);
+    const ids = Array.from(selectedIds);
+    const res = await moverParaLixeiraEmMassa(ids);
+    setBulkLoading(false);
+    if (res.ok) {
+      setProdutos((prev) => prev.filter((p) => !selectedIds.has(p.id!)));
+      setSelectedIds(new Set());
+      setMensagem({ tipo: "ok", texto: `${res.count ?? ids.length} produto(s) movido(s) para a lixeira.` });
+    } else {
+      setMensagem({ tipo: "erro", texto: res.erro ?? "Erro ao excluir produtos." });
     }
   }
 
@@ -348,29 +456,127 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
         )}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleEncerrarSelecionadas}
-          disabled={!algumSelecionado || bulkLoading}
-          className="rounded-lg border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-sm font-medium text-amber-400 hover:bg-amber-950/50 disabled:opacity-50"
-        >
-          {bulkLoading ? "Processando…" : `Encerrar Promoções Selecionadas${algumSelecionado ? ` (${selectedIds.size})` : ""}`}
-        </button>
-        <button
-          type="button"
-          onClick={handleLimparTodasOfertas}
-          disabled={bulkLoading || todosComPromo.length === 0}
-          className="rounded-lg border border-red-800/50 bg-red-950/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-950/40 disabled:opacity-50"
-        >
-          Limpar Todas as Ofertas da Loja
-        </button>
-        {todosComPromo.length > 0 && (
-          <span className="text-sm text-zinc-500">
-            {todosComPromo.length} produto(s) com oferta ativa
-          </span>
+      <div className="mb-6 rounded-xl border border-[var(--border)] bg-zinc-900/40 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-sm font-medium text-zinc-400">Ações em lote</span>
+          {todosComPromo.length > 0 && (
+            <span className="rounded-full bg-zinc-700/80 px-2 py-0.5 text-xs text-zinc-500">
+              {todosComPromo.length} com oferta ativa
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 border-r border-zinc-700/80 pr-4">
+            <span className="mr-1 text-xs font-medium uppercase tracking-wider text-zinc-500">Com seleção</span>
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              disabled={!algumSelecionado || bulkLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-red-950/40 hover:text-red-400 disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-300"
+              title="Mover selecionados para a lixeira"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Excluir {algumSelecionado ? `(${selectedIds.size})` : ""}
+            </button>
+            <button
+              type="button"
+              onClick={handleEncerrarSelecionadas}
+              disabled={!algumSelecionado || bulkLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-amber-950/40 hover:text-amber-400 disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-300"
+              title="Remover promoção dos selecionados"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7a2 2 0 010-2.828l7-7A1.994 1.994 0 0112 3h5" />
+              </svg>
+              Encerrar promoções {algumSelecionado ? `(${selectedIds.size})` : ""}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-medium uppercase tracking-wider text-zinc-500">Ofertas (todos)</span>
+            <button
+              type="button"
+              onClick={handleLimparTodasOfertas}
+              disabled={bulkLoading || todosComPromo.length === 0}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-red-950/40 hover:text-red-400 disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-300"
+              title="Remover preço promocional e período de oferta de todos"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Limpar todas ofertas
+            </button>
+            <button
+              type="button"
+              onClick={handleDesativarOfertasEstoque}
+              disabled={bulkLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-blue-950/40 hover:text-blue-400 disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-300"
+              title="Tirar da aba Ofertas; preço de custo volta ao custo base (produto permanece ativo)"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7a2 2 0 010-2.828l7-7A1.994 1.994 0 0112 3h5" />
+              </svg>
+              Tirar ofertas Estoque da aba
+            </button>
+            <button
+              type="button"
+              onClick={handleDesativarOfertasPlayStation}
+              disabled={bulkLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:bg-amber-950/40 hover:text-amber-400 disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-300"
+              title="Tirar da aba Ofertas; preço de custo volta ao custo base (produto permanece ativo)"
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7a2 2 0 010-2.828l7-7A1.994 1.994 0 0112 3h5" />
+              </svg>
+              Tirar ofertas PlayStation da aba
+            </button>
+          </div>
+        </div>
+        {bulkLoading && (
+          <p className="mt-3 text-xs text-amber-400">Processando…</p>
         )}
       </div>
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-red-800/50 bg-zinc-900 p-6 shadow-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
+                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Confirmar Exclusão</h3>
+                <p className="text-sm text-zinc-400">Esta ação pode ser revertida na Lixeira</p>
+              </div>
+            </div>
+            
+            <p className="mb-6 text-zinc-300">
+              Você está prestes a mover <strong className="text-red-400">{selectedIds.size} produto(s)</strong> para a lixeira.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(false)}
+                className="flex-1 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-700"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleExcluirSelecionados}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-500"
+              >
+                Sim, Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] border-collapse text-left text-sm">
@@ -421,6 +627,12 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
                 const qtd = Number(p.quantidade_estoque ?? 0);
                 const indisponivel = gerenciarEstoque && qtd <= 0;
                 const catLabel = [p.categoria_nome, p.subcategoria_nome].filter(Boolean).join(" / ") || "—";
+                const origemOferta =
+                  (p as { id_externo?: string | null; url_origem?: string | null }).id_externo?.startsWith("estoque-")
+                    ? "estoque"
+                    : (p as { url_origem?: string | null }).url_origem?.toLowerCase().includes("playstation")
+                      ? "playstation"
+                      : null;
                 return (
                   <tr
                     key={id}
@@ -454,7 +666,22 @@ export function ListaProdutosAdmin({ produtos: initialProdutos }: Props) {
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-zinc-400">{catLabel}</td>
+                    <td className="p-3 text-zinc-400">
+                      <div className="flex flex-col gap-1">
+                        <span>{catLabel}</span>
+                        {origemOferta && (
+                          <span
+                            className={`inline-flex w-fit rounded px-1.5 py-0.5 text-xs font-medium ${
+                              origemOferta === "estoque"
+                                ? "bg-blue-500/20 text-blue-400"
+                                : "bg-amber-500/20 text-amber-400"
+                            }`}
+                          >
+                            {origemOferta === "estoque" ? "Estoque" : "PlayStation"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-3">
                       {precoPromo != null ? (
                         <span>

@@ -16,6 +16,9 @@ type ProdutoCompleto = ProdutoLoja & {
   preco_custo?: number | null;
   preco_custo_anterior?: number | null;
   preco_promocional?: number | null;
+  preco_promocional_ps4?: number | null;
+  preco_promocional_ps5?: number | null;
+  usar_preco_promocional_por_console?: boolean;
   gerenciar_estoque?: boolean;
   quantidade_estoque?: number;
   slug?: string | null;
@@ -74,13 +77,34 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
   const [precoCusto, setPrecoCusto] = useState(
     produto.preco_custo != null ? String(produto.preco_custo) : ""
   );
+  const [precoCustoPs4, setPrecoCustoPs4] = useState(
+    produto.preco_custo_ps4 != null ? String(produto.preco_custo_ps4) : ""
+  );
+  const [precoCustoPs5, setPrecoCustoPs5] = useState(
+    produto.preco_custo_ps5 != null ? String(produto.preco_custo_ps5) : ""
+  );
   const [preco, setPreco] = useState(String(produto.preco));
   const [precoPromocional, setPrecoPromocional] = useState(
     produto.preco_promocional != null ? String(produto.preco_promocional) : ""
   );
+  const [usarPrecoPromocionalPorConsole, setUsarPrecoPromocionalPorConsole] = useState(
+    produto.usar_preco_promocional_por_console === true
+  );
+  const [precoPromocionalPs4, setPrecoPromocionalPs4] = useState(
+    produto.preco_promocional_ps4 != null ? String(produto.preco_promocional_ps4) : ""
+  );
+  const [precoPromocionalPs5, setPrecoPromocionalPs5] = useState(
+    produto.preco_promocional_ps5 != null ? String(produto.preco_promocional_ps5) : ""
+  );
   const [gerenciarEstoque, setGerenciarEstoque] = useState(produto.gerenciar_estoque === true);
   const [quantidadeEstoque, setQuantidadeEstoque] = useState(
     String(produto.quantidade_estoque ?? 0)
+  );
+  const [quantidadeEstoquePs4, setQuantidadeEstoquePs4] = useState(
+    String(produto.quantidade_estoque_ps4 ?? 0)
+  );
+  const [quantidadeEstoquePs5, setQuantidadeEstoquePs5] = useState(
+    String(produto.quantidade_estoque_ps5 ?? 0)
   );
   const [slug, setSlug] = useState(produto.slug ?? "");
   const [selectedCategoriaIds, setSelectedCategoriaIds] = useState<Set<string>>(
@@ -88,6 +112,11 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
   );
   const [disponivelPs4, setDisponivelPs4] = useState(produto.disponivel_ps4 !== false);
   const [disponivelPs5, setDisponivelPs5] = useState(produto.disponivel_ps5 !== false);
+  const [precoCustoBase, setPrecoCustoBase] = useState(
+    produto.preco_custo_anterior != null ? String(produto.preco_custo_anterior).replace(".", ",") : ""
+  );
+  const [editandoCustoBase, setEditandoCustoBase] = useState(false);
+  const [editandoPrecoBase, setEditandoPrecoBase] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -137,12 +166,23 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
       preco_original: produto.preco_original,
       preco: Number(preco.replace(",", ".")),
       preco_custo: precoCusto ? Number(precoCusto.replace(",", ".")) : null,
-      preco_promocional: precoPromocional ? Number(precoPromocional.replace(",", ".")) : null,
+      preco_custo_ps4: usarPrecoPromocionalPorConsole && precoCustoPs4 ? Number(precoCustoPs4.replace(",", ".")) : null,
+      preco_custo_ps5: usarPrecoPromocionalPorConsole && precoCustoPs5 ? Number(precoCustoPs5.replace(",", ".")) : null,
+      preco_custo_anterior: precoCustoBase ? Number(precoCustoBase.replace(",", ".")) : null,
+      preco_promocional: !usarPrecoPromocionalPorConsole && precoPromocional ? Number(precoPromocional.replace(",", ".")) : null,
+      preco_promocional_ps4: usarPrecoPromocionalPorConsole && precoPromocionalPs4 ? Number(precoPromocionalPs4.replace(",", ".")) : null,
+      preco_promocional_ps5: usarPrecoPromocionalPorConsole && precoPromocionalPs5 ? Number(precoPromocionalPs5.replace(",", ".")) : null,
+      usar_preco_promocional_por_console: usarPrecoPromocionalPorConsole,
       descricao: descricao || null,
       ativo,
       em_destaque: emDestaque,
       gerenciar_estoque: gerenciarEstoque,
-      quantidade_estoque: Number(quantidadeEstoque) || 0,
+      quantidade_estoque:
+        disponivelPs4 && disponivelPs5
+          ? (Number(quantidadeEstoquePs4) || 0) + (Number(quantidadeEstoquePs5) || 0)
+          : Number(quantidadeEstoque) || 0,
+      quantidade_estoque_ps4: disponivelPs4 ? (Number(quantidadeEstoquePs4) || 0) : null,
+      quantidade_estoque_ps5: disponivelPs5 ? (Number(quantidadeEstoquePs5) || 0) : null,
       slug: slug || null,
       categoria_ids: Array.from(selectedCategoriaIds),
       disponivel_ps4: disponivelPs4,
@@ -164,43 +204,6 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
           {erro}
         </div>
       )}
-
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-        <h2 className="mb-6 text-lg font-semibold text-white">Informações gerais</h2>
-        <div className="space-y-6">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Nome do produto</label>
-            <input
-              type="text"
-              value={nome}
-              onChange={(e) => {
-                const v = e.target.value;
-                setNome(v);
-                if (!slug || slug === slugify(nome)) setSlug(slugify(v));
-              }}
-              required
-              className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-            />
-          </div>
-          <div>
-            <label htmlFor="descricaoProduto" className="mb-2 block text-sm font-medium text-zinc-300">
-              Descrição (mesmo formato de Importar jogo — use • e ■ para títulos)
-            </label>
-            <textarea
-              id="descricaoProduto"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              rows={10}
-              placeholder="Cole o texto da descrição como na PlayStation Store (com • e títulos em maiúsculas ou ■ Título de seção)..."
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
-          <div className="flex flex-wrap gap-8">
-            <Switch label="Produto ativo" checked={ativo} onChange={setAtivo} />
-            <Switch label="Em destaque" checked={emDestaque} onChange={setEmDestaque} />
-          </div>
-        </div>
-      </section>
 
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-6 text-lg font-semibold text-white">Plataformas disponíveis</h2>
@@ -238,6 +241,43 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
         {!disponivelPs4 && !disponivelPs5 && (
           <p className="mt-3 text-sm text-amber-400">⚠ Selecione pelo menos uma plataforma</p>
         )}
+      </section>
+
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-6 text-lg font-semibold text-white">Informações gerais</h2>
+        <div className="space-y-6">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-zinc-300">Nome do produto</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => {
+                const v = e.target.value;
+                setNome(v);
+                if (!slug || slug === slugify(nome)) setSlug(slugify(v));
+              }}
+              required
+              className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label htmlFor="descricaoProduto" className="mb-2 block text-sm font-medium text-zinc-300">
+              Descrição (mesmo formato de Importar jogo — use • e ■ para títulos)
+            </label>
+            <textarea
+              id="descricaoProduto"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              rows={10}
+              placeholder="Cole o texto da descrição como na PlayStation Store (com • e títulos em maiúsculas ou ■ Título de seção)..."
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+          <div className="flex flex-wrap gap-8">
+            <Switch label="Produto ativo" checked={ativo} onChange={setAtivo} />
+            <Switch label="Em destaque" checked={emDestaque} onChange={setEmDestaque} />
+          </div>
+        </div>
       </section>
 
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
@@ -291,75 +331,226 @@ export function FormEditarProduto({ produto, categorias, categoriaIdsIniciais }:
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-6">
             <h3 className="text-sm font-medium text-zinc-400">Financeiro</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={precoCusto}
-                  onChange={(e) => setPrecoCusto(e.target.value)}
-                  placeholder="0,00"
-                  className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
-                />
+                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de venda base (R$)</label>
+                {editandoPrecoBase ? (
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={preco}
+                    onChange={(e) => setPreco(e.target.value)}
+                    onBlur={() => setEditandoPrecoBase(false)}
+                    autoFocus
+                    placeholder="0,00"
+                    className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                  />
+                ) : (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onDoubleClick={() => setEditandoPrecoBase(true)}
+                    onKeyDown={(e) => e.key === "Enter" && setEditandoPrecoBase(true)}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 text-zinc-500 cursor-pointer hover:bg-zinc-800/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    title="Duplo clique para editar"
+                  >
+                    {preco ? Number(preco.replace(",", ".")).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-zinc-500">Preço base quando não há promoção. Duplo clique para editar.</p>
               </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo anterior (R$)</label>
+              <div className="flex items-center gap-3">
                 <input
-                  type="text"
-                  readOnly
-                  value={
-                    produto.preco_custo_anterior != null
-                      ? Number(produto.preco_custo_anterior).toFixed(2).replace(".", ",")
-                      : "—"
-                  }
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 text-zinc-500 cursor-not-allowed"
-                  title="Apenas leitura — histórico do último custo antes da importação"
+                  type="checkbox"
+                  id="usarPromoPorConsole"
+                  checked={usarPrecoPromocionalPorConsole}
+                  onChange={(e) => setUsarPrecoPromocionalPorConsole(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-600 bg-zinc-700 text-emerald-500 focus:ring-emerald-500"
                 />
+                <label htmlFor="usarPromoPorConsole" className="text-sm font-medium text-zinc-300">
+                  Usar preço promocional diferente por console
+                </label>
               </div>
+              {!usarPrecoPromocionalPorConsole ? (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-zinc-300">Preço promocional (R$) – para os dois</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={precoPromocional}
+                    onChange={(e) => setPrecoPromocional(e.target.value)}
+                    placeholder="Opcional"
+                    className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">Preço promocional PS4 (R$)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={precoPromocionalPs4}
+                      onChange={(e) => setPrecoPromocionalPs4(e.target.value)}
+                      placeholder="Opcional"
+                      className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">Preço promocional PS5 (R$)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={precoPromocionalPs5}
+                      onChange={(e) => setPrecoPromocionalPs5(e.target.value)}
+                      placeholder="Opcional"
+                      className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                    />
+                  </div>
+                  <p className="sm:col-span-2 text-xs text-zinc-500">Preencha só o(s) console(s) que terão promo. Onde não preencher, o cliente vê o preço base.</p>
+                </div>
+              )}
+              {!usarPrecoPromocionalPorConsole ? (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo (R$)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={precoCusto}
+                    onChange={(e) => setPrecoCusto(e.target.value)}
+                    placeholder="0,00"
+                    className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo PS4 (R$)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={precoCustoPs4}
+                      onChange={(e) => setPrecoCustoPs4(e.target.value)}
+                      placeholder="0,00"
+                      className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo PS5 (R$)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={precoCustoPs5}
+                      onChange={(e) => setPrecoCustoPs5(e.target.value)}
+                      placeholder="0,00"
+                      className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-500 sm:col-span-2">Cada console com seu próprio preço de custo.</p>
+                </div>
+              )}
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de venda (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={preco}
-                  onChange={(e) => setPreco(e.target.value)}
-                  required
-                  placeholder="0,00"
-                  className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço promocional (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={precoPromocional}
-                  onChange={(e) => setPrecoPromocional(e.target.value)}
-                  placeholder="Opcional"
-                  className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
-                />
+                <label className="mb-2 block text-sm font-medium text-zinc-300">Preço de custo base (R$)</label>
+                {editandoCustoBase ? (
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={precoCustoBase}
+                    onChange={(e) => setPrecoCustoBase(e.target.value)}
+                    onBlur={() => setEditandoCustoBase(false)}
+                    autoFocus
+                    placeholder="0,00"
+                    className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500"
+                  />
+                ) : (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onDoubleClick={() => setEditandoCustoBase(true)}
+                    onKeyDown={(e) => e.key === "Enter" && setEditandoCustoBase(true)}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 text-zinc-500 cursor-pointer hover:bg-zinc-800/80 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    title="Referência quando não há oferta ativa. Duplo clique para editar."
+                  >
+                    {precoCustoBase ? Number(precoCustoBase.replace(",", ".")).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                  </div>
+                )}
               </div>
             </div>
-            {/* Campos de início/fim de oferta foram removidos.
-                Agora basta definir um preço promocional; a lógica de exibição usa
-                esse valor em conjunto com a promoção atual (importação de ofertas). */}
           </div>
           <div className="space-y-6">
             <h3 className="text-sm font-medium text-zinc-400">Estoque</h3>
             <Switch label="Gerenciar estoque" checked={gerenciarEstoque} onChange={setGerenciarEstoque} />
             {gerenciarEstoque && (
-              <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Quantidade em estoque</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={quantidadeEstoque}
-                  onChange={(e) => setQuantidadeEstoque(e.target.value)}
-                  className="w-full max-w-xs rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white"
-                />
-                <p className="mt-1 text-xs text-zinc-500">Se chegar a 0, o produto fica Indisponível no site.</p>
-              </div>
+              <>
+                {(disponivelPs4 || disponivelPs5) ? (
+                  <>
+                    <p className="text-xs text-zinc-500">Cada console com sua própria quantidade em estoque.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {disponivelPs4 && (
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-zinc-300">Quantidade estoque PS4</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={quantidadeEstoquePs4}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setQuantidadeEstoquePs4(v);
+                              setQuantidadeEstoque(
+                                disponivelPs5
+                                  ? String((Number(v) || 0) + (Number(quantidadeEstoquePs5) || 0))
+                                  : v
+                              );
+                            }}
+                            className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white"
+                          />
+                        </div>
+                      )}
+                      {disponivelPs5 && (
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-zinc-300">Quantidade estoque PS5</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={quantidadeEstoquePs5}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setQuantidadeEstoquePs5(v);
+                              setQuantidadeEstoque(
+                                disponivelPs4
+                                  ? String((Number(quantidadeEstoquePs4) || 0) + (Number(v) || 0))
+                                  : v
+                              );
+                            }}
+                            className="w-full rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-500">Total (soma)</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={(Number(quantidadeEstoquePs4) || 0) + (Number(quantidadeEstoquePs5) || 0)}
+                        className="w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 text-zinc-500 cursor-not-allowed"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">Quantidade em estoque</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={quantidadeEstoque}
+                      onChange={(e) => setQuantidadeEstoque(e.target.value)}
+                      className="w-full max-w-xs rounded-lg border border-[var(--border)] bg-zinc-800 px-4 py-2.5 text-white"
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-zinc-500">Se chegar a 0, o produto fica Indisponível no site.</p>
+              </>
             )}
           </div>
         </div>

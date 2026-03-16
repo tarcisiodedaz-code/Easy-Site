@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { criarPagamentoPix } from "@/lib/mercado-pago";
+import { notificarPedidoWhatsApp } from "@/lib/whatsapp-notificacao";
 
 type Item = { produto_id: string; produto_nome: string; preco_unitario: number; quantidade: number };
 
@@ -67,6 +68,20 @@ export async function POST(request: NextRequest) {
         quantidade: i.quantidade,
       }))
     );
+
+    // Cópia do pedido no WhatsApp do lojista (se Twilio ou webhook configurados)
+    void notificarPedidoWhatsApp({
+      numero: pedido.numero,
+      cliente_nome: cliente_nome.trim(),
+      cliente_email: cliente_email.trim(),
+      total,
+      forma_pagamento: forma,
+      itens: itens.map((i) => ({
+        produto_nome: i.produto_nome,
+        preco_unitario: i.preco_unitario,
+        quantidade: i.quantidade,
+      })),
+    });
 
     if (forma_pagamento === "pix") {
       const pix = await criarPagamentoPix({

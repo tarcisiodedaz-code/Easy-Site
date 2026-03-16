@@ -21,8 +21,14 @@ export type ProdutoLoja = {
   /** Se true e quantidade_estoque <= 0, exibir como Indisponível e bloquear compra */
   gerenciar_estoque?: boolean;
   quantidade_estoque?: number;
-  /** Preço promocional; se null/0 ou fora do período, não exibe tarja/riscado */
+  /** Preço promocional único (para os dois quando não usar por console) */
   preco_promocional?: number | null;
+  /** Preço promocional só para PS4 */
+  preco_promocional_ps4?: number | null;
+  /** Preço promocional só para PS5 */
+  preco_promocional_ps5?: number | null;
+  /** Se true, loja usa preco_promocional_ps4 e preco_promocional_ps5; senão usa preco_promocional */
+  usar_preco_promocional_por_console?: boolean;
   oferta_inicio?: string | null;
   oferta_fim?: string | null;
   /** Vitrine: exibir na seção "Lançamentos" */
@@ -33,4 +39,12 @@ export type ProdutoLoja = {
   disponivel_ps4?: boolean;
   /** Disponível para PlayStation 5 */
   disponivel_ps5?: boolean;
-};
+  /** Preço de custo das unidades PS4 (importação Estoque → Loja) */
+  preco_custo_ps4?: number | null;
+  /** Preço de custo das unidades PS5 (importação Estoque → Loja) */
+  preco_custo_ps5?: number | null;
+  /** Quantidade em estoque para PS4 */
+  quantidade_estoque_ps4?: number | null;
+  /** Quantidade em estoque para PS5 */
+  quantidade_estoque_ps5?: number | null;
+}

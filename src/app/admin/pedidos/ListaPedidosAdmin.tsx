@@ -21,6 +21,8 @@ type Props = {
   paginaAtual: number;
   filtroSituacao?: SituacaoPedido;
   filtroFormaPagamento?: FormaPagamento;
+  /** Mapa produto_id -> origem para exibir Estoque/PlayStation nos itens */
+  origemPorProdutoId?: Record<string, "estoque" | "playstation">;
 };
 
 function formatarData(iso: string) {
@@ -60,6 +62,7 @@ export function ListaPedidosAdmin({
   paginaAtual,
   filtroSituacao,
   filtroFormaPagamento,
+  origemPorProdutoId = {},
 }: Props) {
   const router = useRouter();
   const [acaoId, setAcaoId] = useState<string | null>(null);
@@ -221,6 +224,7 @@ export function ListaPedidosAdmin({
               <th className="p-4 font-medium">Cliente</th>
               <th className="p-4 font-medium">Pagamento</th>
               <th className="p-4 font-medium">Envio</th>
+              <th className="p-4 font-medium">Itens</th>
               <th className="p-4 font-medium">Total</th>
               <th className="p-4 font-medium">Ações</th>
             </tr>
@@ -228,7 +232,7 @@ export function ListaPedidosAdmin({
           <tbody>
             {pedidos.length === 0 ? (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-zinc-500">
+                <td colSpan={9} className="p-8 text-center text-zinc-500">
                   Nenhum pedido encontrado.
                 </td>
               </tr>
@@ -281,6 +285,30 @@ export function ListaPedidosAdmin({
                     </span>
                   </td>
                   <td className="p-4 text-zinc-500">Recebimento por e-mail</td>
+                  <td className="p-4">
+                    {(() => {
+                      const n = p.itens.length;
+                      const totalQtd = p.itens.reduce((s, i) => s + i.quantidade, 0);
+                      const porOrigem = { estoque: 0, playstation: 0 };
+                      for (const i of p.itens) {
+                        const orig = origemPorProdutoId[i.produto_id];
+                        const q = i.quantidade;
+                        if (orig === "estoque") porOrigem.estoque += q;
+                        else if (orig === "playstation") porOrigem.playstation += q;
+                      }
+                      const partes: string[] = [];
+                      if (porOrigem.estoque) partes.push(`${porOrigem.estoque} Estoque`);
+                      if (porOrigem.playstation) partes.push(`${porOrigem.playstation} PS`);
+                      return (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-zinc-300">{totalQtd} {totalQtd === 1 ? "item" : "itens"}</span>
+                          {partes.length > 0 && (
+                            <span className="text-xs text-zinc-500">{partes.join(", ")}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="p-4 font-medium text-white">{formatarPreco(p.total)}</td>
                   <td className="p-4">
                     <div className="relative">

@@ -13,10 +13,13 @@ No projeto na Vercel: **Settings → Environment Variables**. Adicione:
 | `ADMIN_PASSWORD` | Senha do painel admin | A que você usa em /admin/login |
 | `ADMIN_SECRET` | Frase secreta do admin | Mesma do .env.local |
 
-Para Mercado Pago e e-mail (opcional):
+Para Mercado Pago, e-mail e notificação de pedido (opcional):
 
 - `MERCADOPAGO_ACCESS_TOKEN` – para pagamentos
 - `RESEND_API_KEY` ou `EMAIL_API_KEY` / `EMAIL_API_URL` – se usar e-mail
+- **Cópia do pedido no seu WhatsApp:** use uma das opções:
+  - **Twilio WhatsApp:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` (ex.: `whatsapp:+14155238886`), `WHATSAPP_NOTIFICACAO_DESTINO` (seu número, ex.: `5579999204322`)
+  - **Webhook (Zapier/Make):** `NOTIFICACAO_PEDIDO_WEBHOOK_URL` – a URL receberá um POST com `tipo`, `mensagem` e `pedido` em JSON; você pode encaminhar para WhatsApp pela automação
 
 Marque as variáveis para **Production**, **Preview** e **Development** se quiser que valham em todos os ambientes.
 

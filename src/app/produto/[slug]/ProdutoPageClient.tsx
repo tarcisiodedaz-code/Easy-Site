@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import type { ProdutoLoja } from "@/lib/supabase";
 import { formatBRL } from "@/lib/utils/formatters";
+import { calcularParcela } from "@/lib/utils/formatters";
+import { precoEfetivoParaConsole, precoRiscadoParaConsole } from "@/lib/preco-produto";
 
 const WHATSAPP_NUMERO = "5579999204322";
 
 type Props = {
   produto: ProdutoLoja & { descricao?: string | null };
-  precoExibir: number;
-  precoRiscado: number | null;
-  percentualDesconto: number;
   imagemUrl: string;
   informacoesAdicionaisHtml: string;
   descricaoHtml: string;
@@ -40,12 +39,8 @@ function PS5Icon({ className = "h-12 w-12" }: { className?: string }) {
   );
 }
 
-
 export function ProdutoPageClient({
   produto,
-  precoExibir,
-  precoRiscado,
-  percentualDesconto,
   imagemUrl,
   informacoesAdicionaisHtml,
   descricaoHtml,
@@ -59,6 +54,7 @@ export function ProdutoPageClient({
   const { addItem, itens } = useCart();
   const [versaoSelecionada, setVersaoSelecionada] = useState<"ps4" | "ps5" | null>(null);
   const [adicionado, setAdicionado] = useState(false);
+  const [mostrarParcelas, setMostrarParcelas] = useState(false);
 
   const taxaCartao = taxaCartaoInicial;
   const iconeMercadoPago = iconeMercadoPagoInicial;
@@ -78,8 +74,20 @@ export function ProdutoPageClient({
     }
   }, [disponivelPs4, disponivelPs5]);
 
+  const precoExibir = versaoSelecionada
+    ? precoEfetivoParaConsole(produto, versaoSelecionada)
+    : 0;
+  const precoRiscado = versaoSelecionada
+    ? precoRiscadoParaConsole(produto, versaoSelecionada)
+    : null;
+  const baseNum = Number(produto.preco) || 0;
+  const percentualDesconto =
+    versaoSelecionada && baseNum > 0 && precoExibir < baseNum
+      ? Math.round(((baseNum - precoExibir) / baseNum) * 100)
+      : 0;
+
   const precoComTaxa = precoExibir + (precoExibir * taxaCartao / 100);
-  const parcela = precoComTaxa / 12;
+  const parcela = precoExibir > 0 ? calcularParcela(precoExibir, taxaCartao) : 0;
   const precoFormatado = formatBRL(precoExibir);
   const whatsappMsg = `Olá! Gostaria de comprar: ${produto.nome} (${versaoSelecionada?.toUpperCase() || "PS5"}) - ${precoFormatado}`;
 
@@ -88,7 +96,7 @@ export function ProdutoPageClient({
 
   function handleAddToCart() {
     if (!versaoSelecionada || indisponivel) return;
-    
+
     if (jaNoCarrinho || adicionado) {
       router.push("/carrinho");
       return;
@@ -116,7 +124,7 @@ export function ProdutoPageClient({
           priority
           unoptimized={imagemUrl.startsWith("http") && !imagemUrl.includes("supabase")}
         />
-        {percentualDesconto > 0 && (
+        {versaoSelecionada && percentualDesconto > 0 && (
           <div className="absolute left-3 top-3 z-10">
             <span className="inline-flex rounded-md bg-red-600 px-3 py-1.5 text-sm font-bold text-white shadow-lg">
               -{percentualDesconto}%
@@ -132,37 +140,58 @@ export function ProdutoPageClient({
         </h1>
 
         <div className="mt-6 space-y-3">
-          {/* Preço PIX */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold text-emerald-400">{precoFormatado}</span>
-            {precoRiscado != null && (
-              <span className="text-lg text-zinc-500 line-through">{formatBRL(precoRiscado)}</span>
-            )}
-          </div>
+          {!versaoSelecionada ? (
+            <p className="text-lg text-zinc-400">Selecione o console para ver o preço</p>
+          ) : (
+            <>
+              {/* Preço PIX */}
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-emerald-400">{precoFormatado}</span>
+                {precoRiscado != null && (
+                  <span className="text-lg text-zinc-500 line-through">{formatBRL(precoRiscado)}</span>
+                )}
+              </div>
 
-          {/* Parcelamento */}
-          <p className="text-sm text-zinc-300">
-            Ou <span className="font-semibold text-white">12x</span> de{" "}
-            <span className="font-semibold text-emerald-400">{formatBRL(parcela)}</span>{" "}
-            sem juros
-          </p>
+              {/* Parcelamento */}
+              <p className="text-sm text-zinc-300">
+                Ou <span className="font-semibold text-white">12x</span> de{" "}
+                <span className="font-semibold text-emerald-400">{formatBRL(parcela)}</span> no cartão
+              </p>
+            </>
+          )}
 
           {/* Métodos de pagamento */}
           <div className="mt-6 space-y-4">
             {/* Mercado Pago Card */}
-            <div className="flex items-center gap-4">
-              {iconeMercadoPago ? (
-                <img
-                  src={iconeMercadoPago}
-                  alt="Mercado Pago"
-                  className="h-10 w-10 shrink-0 object-contain"
-                />
-              ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00AEEF]">
-                  <span className="text-[10px] font-bold text-white">MP</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-4">
+                {iconeMercadoPago ? (
+                  <img
+                    src={iconeMercadoPago}
+                    alt="Mercado Pago"
+                    className="h-10 w-10 shrink-0 object-contain"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00AEEF]">
+                    <span className="text-[10px] font-bold text-white">MP</span>
+                  </div>
+                )}
+                <span className="text-sm font-medium text-white">Cartão via Mercado Pago</span>
+              </div>
+              {versaoSelecionada && precoExibir > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMostrarParcelas(!mostrarParcelas)}
+                  className="text-xs text-cyan-400 hover:underline"
+                >
+                  {mostrarParcelas ? "Ocultar parcelas" : "Ver parcelas"}
+                </button>
+              )}
+              {versaoSelecionada && mostrarParcelas && precoExibir > 0 && (
+                <div className="w-full rounded-lg bg-zinc-800/80 px-3 py-2 text-xs text-zinc-300">
+                  12x de {formatBRL(parcela)} (com juros conforme taxa do site)
                 </div>
               )}
-              <span className="text-sm font-medium text-white">Cartão via Mercado Pago</span>
             </div>
 
             {/* Pix */}
@@ -227,11 +256,10 @@ export function ProdutoPageClient({
 
       {/* Coluna 3: Seletor de versão */}
       <div className="lg:pl-4">
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-400">
-          Selecione seu Console
+        <h3 className="mb-4 text-xl font-bold uppercase tracking-wider text-white">
+          SELECIONE SEU CONSOLE
         </h3>
         <div className="flex flex-col gap-3">
-          {/* Card PS4 - Azul PlayStation com efeito neon */}
           {disponivelPs4 && (
             <button
               onClick={() => setVersaoSelecionada("ps4")}
@@ -261,7 +289,6 @@ export function ProdutoPageClient({
             </button>
           )}
 
-          {/* Card PS5 - Branco com efeito neon */}
           {disponivelPs5 && (
             <button
               onClick={() => setVersaoSelecionada("ps5")}
@@ -291,7 +318,6 @@ export function ProdutoPageClient({
             </button>
           )}
         </div>
-
       </div>
     </section>
   );

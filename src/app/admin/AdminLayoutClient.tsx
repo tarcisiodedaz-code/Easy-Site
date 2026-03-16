@@ -40,12 +40,18 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const isProdutosRoute =
     pathname === "/admin/produtos" ||
     pathname.startsWith("/admin/produtos/") ||
-    pathname === "/admin/importar";
+    pathname === "/admin/importar" ||
+    pathname === "/admin/estoque-loja";
   const isPersonaliseRoute =
     pathname === "/admin/personalise" ||
     pathname.startsWith("/admin/personalise/") ||
-    pathname === "/admin/vitrine";
-  const isConfigRoute = pathname.startsWith("/admin/configuracoes");
+    pathname === "/admin/vitrine" ||
+    pathname === "/admin/configuracoes/banner-divisor" ||
+    pathname.startsWith("/admin/configuracoes/paginas");
+  const isConfigRoute =
+    pathname.startsWith("/admin/configuracoes") &&
+    pathname !== "/admin/configuracoes/banner-divisor" &&
+    !pathname.startsWith("/admin/configuracoes/paginas");
   const [vendasAberto, setVendasAberto] = useState(isVendasRoute);
   const [produtosAberto, setProdutosAberto] = useState(isProdutosRoute);
   const [personaliseAberto, setPersonaliseAberto] = useState(isPersonaliseRoute);
@@ -133,6 +139,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
                   {navLink("/admin/produtos", pathname, "Listar Produtos")}
                   {navLink("/admin/produtos/novo", pathname, "Criar Produto")}
                   {navLink("/admin/importar", pathname, "Importar ofertas")}
+                  {navLink("/admin/estoque-loja", pathname, "Estoque → Loja")}
                   {navLink("/admin/produtos/categorias", pathname, "Categorias")}
                   {navLink("/admin/produtos/lixeira", pathname, "Lixeira")}
                 </div>
@@ -161,7 +168,9 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
                 <div className="mt-0.5 flex flex-col gap-0">
                   {navLink("/admin/personalise", pathname, "Logo")}
                   {navLink("/admin/personalise/banners", pathname, "Banners")}
+                  {navLink("/admin/configuracoes/banner-divisor", pathname, "Banner Divisor")}
                   {navLink("/admin/vitrine", pathname, "Gerenciar Vitrine")}
+                  {navLink("/admin/configuracoes/paginas", pathname, "Páginas")}
                   {navLink("/admin/personalise/informacoes-adicionais", pathname, "Informações adicionais")}
                 </div>
               )}
@@ -188,8 +197,6 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               {configAberto && (
                 <div className="mt-0.5 flex flex-col gap-0">
                   {navLink("/admin/configuracoes/pagamentos", pathname, "Pagamentos")}
-                  {navLink("/admin/configuracoes/banner-divisor", pathname, "Banner Divisor")}
-                  {navLink("/admin/configuracoes/paginas", pathname, "Páginas")}
                 </div>
               )}
             </div>

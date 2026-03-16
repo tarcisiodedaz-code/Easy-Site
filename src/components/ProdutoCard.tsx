@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ProdutoLoja } from "@/lib/supabase";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
 import { formatBRL, calcularParcela as calcParcela } from "@/lib/utils/formatters";
+import { menorPrecoEfetivo } from "@/lib/preco-produto";
 
 type ProdutoCardProps = {
   produto: ProdutoLoja;
@@ -30,29 +31,15 @@ function isIndisponivel(produto: ProdutoLoja): boolean {
   );
 }
 
-function temOfertaValida(produto: ProdutoLoja): boolean {
-  const promo = produto.preco_promocional;
-  if (promo == null || Number(promo) <= 0) return false;
-  const now = Date.now();
-  const inicio = produto.oferta_inicio ? new Date(produto.oferta_inicio).getTime() : null;
-  const fim = produto.oferta_fim ? new Date(produto.oferta_fim).getTime() : null;
-  if (inicio != null && now < inicio) return false;
-  if (fim != null && now > fim) return false;
-  return true;
-}
-
 function ProdutoCardComponent({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80";
   const indisponivel = isIndisponivel(produto);
-  const emOferta = temOfertaValida(produto);
-  const precoExibir = emOferta && produto.preco_promocional != null
-    ? Number(produto.preco_promocional)
-    : produto.preco;
-  const precoOriginal = produto.preco_original ?? produto.preco;
-  const precoDeNum = typeof precoOriginal === "number" ? precoOriginal : Number(precoOriginal) || 0;
-  const precoExibirNum = typeof precoExibir === "number" ? precoExibir : Number(precoExibir) || 0;
+  const precoExibirNum = menorPrecoEfetivo(produto);
+  // Preço tachado = preço de venda base (preco = mesmo campo editado no admin)
+  const precoVendaBase = produto.preco ?? produto.preco_original;
+  const precoDeNum = typeof precoVendaBase === "number" ? precoVendaBase : Number(precoVendaBase) || 0;
   const percentualDesconto =
     precoDeNum > 0 && precoExibirNum < precoDeNum
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
@@ -60,8 +47,8 @@ function ProdutoCardComponent({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   const parcela = calcParcela(precoExibirNum, taxaCartao);
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
-      <Link href={`/produto/${(produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo}`} className="flex flex-col flex-1">
+    <article className="group flex flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+      <Link href={`/produto/${(produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo}`} className="flex flex-1 flex-col min-h-0">
         <div className="relative w-full overflow-hidden rounded-t-2xl bg-zinc-900" style={{ aspectRatio: "4/5" }}>
           <Image
             src={imagemUrl}
@@ -86,19 +73,19 @@ function ProdutoCardComponent({ produto, taxaCartao = 5 }: ProdutoCardProps) {
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col p-4">
+        <div className="flex flex-1 flex-col p-4 min-h-0">
           <PlatformIcons />
           {/* Título */}
           <h3 className="mt-2 line-clamp-2 text-lg font-bold leading-snug text-white transition-colors group-hover:text-zinc-200">
             {produto.nome}
           </h3>
-          
-          {/* Preço Original (riscado) */}
-          {precoDeNum > precoExibirNum && (
-            <p className="mt-2 text-sm text-zinc-500 line-through">
-              De {formatBRL(precoDeNum)}
+          {/* Espaço flexível para alinhar preços e botão na base do card */}
+          <div className="flex-1 min-h-0" aria-hidden />
+          <div className="mt-2">
+            {/* Preço de venda base (tachado quando há promo) — min-height mantém o botão alinhado entre cards */}
+            <p className="min-h-[1.25rem] text-sm text-zinc-500">
+              {precoDeNum > precoExibirNum && <span className="line-through">De {formatBRL(precoDeNum)}</span>}
             </p>
-          )}
           
           {/* Preço PIX (destaque verde) */}
           <p className="mt-1">
@@ -112,6 +99,7 @@ function ProdutoCardComponent({ produto, taxaCartao = 5 }: ProdutoCardProps) {
           <p className="mt-1 text-sm text-white/80">
             Ou 12x de {formatBRL(parcela)} no cartão*
           </p>
+          </div>
         </div>
       </Link>
       <div className="p-4 pt-0">
@@ -143,13 +131,10 @@ function ProdutoCardV2Component({ produto, taxaCartao = 5 }: ProdutoCardProps) {
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80";
   const indisponivel = isIndisponivel(produto);
-  const emOferta = temOfertaValida(produto);
-  const precoExibir = emOferta && produto.preco_promocional != null
-    ? Number(produto.preco_promocional)
-    : produto.preco;
-  const precoOriginal = produto.preco_original ?? produto.preco;
-  const precoDeNum = typeof precoOriginal === "number" ? precoOriginal : Number(precoOriginal) || 0;
-  const precoExibirNum = typeof precoExibir === "number" ? precoExibir : Number(precoExibir) || 0;
+  const precoExibirNum = menorPrecoEfetivo(produto);
+  // Preço tachado = preço de venda base (preco = mesmo campo editado no admin)
+  const precoVendaBase = produto.preco ?? produto.preco_original;
+  const precoDeNum = typeof precoVendaBase === "number" ? precoVendaBase : Number(precoVendaBase) || 0;
   const percentualDesconto =
     precoDeNum > 0 && precoExibirNum < precoDeNum
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
@@ -158,8 +143,8 @@ function ProdutoCardV2Component({ produto, taxaCartao = 5 }: ProdutoCardProps) {
   const parcela = calcParcela(precoExibirNum, taxaCartao);
 
   return (
-    <article className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
-      <Link href={`/produto/${slug}`} className="flex flex-1 flex-col">
+    <article className="group flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950 transition-all duration-300 hover:border-zinc-700/80 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+      <Link href={`/produto/${slug}`} className="flex flex-1 flex-col min-h-0">
         <div className="relative w-full overflow-hidden rounded-t-xl bg-zinc-900" style={{ aspectRatio: "4/5" }}>
           <Image
             src={imagemUrl}
@@ -184,19 +169,18 @@ function ProdutoCardV2Component({ produto, taxaCartao = 5 }: ProdutoCardProps) {
             </div>
           )}
         </div>
-        <div className="flex flex-1 flex-col p-3">
+        <div className="flex flex-1 flex-col p-3 min-h-0">
           {/* Título */}
           <h3 className="line-clamp-2 text-base font-bold leading-snug text-white transition-colors group-hover:text-zinc-200">
             {produto.nome}
           </h3>
-          
+          {/* Espaço flexível para alinhar preços e botão na base do card */}
+          <div className="flex-1 min-h-0" aria-hidden />
           <div className="mt-2 flex flex-col gap-1">
-            {/* Preço Original riscado */}
-            {precoDeNum > precoExibirNum && (
-              <p className="text-xs text-zinc-500 line-through">
-                De {formatBRL(precoDeNum)}
-              </p>
-            )}
+            {/* Preço de venda base (tachado quando há promo) — min-height mantém o botão alinhado */}
+            <p className="min-h-[1rem] text-xs text-zinc-500">
+              {precoDeNum > precoExibirNum && <span className="line-through">De {formatBRL(precoDeNum)}</span>}
+            </p>
             
             {/* Preço PIX */}
             <p>
