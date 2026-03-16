@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { criarPagamentoPix } from "@/lib/mercado-pago";
 import { notificarPedidoWhatsApp } from "@/lib/whatsapp-notificacao";
 
@@ -105,6 +106,27 @@ export async function POST(request: NextRequest) {
       },
       opcoes
     );
+
+    // Salvar CPF, telefone e nome no perfil do usuário logado para preencher nos próximos pedidos
+    try {
+      const serverSupabase = await createServerClient();
+      const { data: { user } } = await serverSupabase.auth.getUser();
+      const emailNorm = cliente_email.trim().toLowerCase();
+      if (user?.email?.toLowerCase() === emailNorm) {
+        const cpfDigits = cliente_cpf != null ? String(cliente_cpf).replace(/\D/g, "").slice(0, 11) : "";
+        const telRaw = cliente_telefone != null ? String(cliente_telefone).replace(/\D/g, "").slice(0, 15) : "";
+        const telCom55 = telRaw.startsWith("55") ? telRaw.slice(0, 13) : telRaw ? "55" + telRaw.slice(0, 11) : "";
+        const updates: Record<string, string> = { ...(user.user_metadata as Record<string, string> || {}) };
+        if (cliente_nome?.trim()) updates.full_name = cliente_nome.trim();
+        if (cpfDigits.length === 11) updates.cpf = cpfDigits;
+        if (telCom55.length >= 12) updates.phone_number = telCom55;
+        if (Object.keys(updates).length > 0) {
+          await supabase.auth.admin.updateUserById(user.id, { user_metadata: updates });
+        }
+      }
+    } catch {
+      // Não bloqueia a criação do pedido se falhar ao atualizar perfil
+    }
 
     if (forma_pagamento === "pix") {
       const pix = await criarPagamentoPix({
