@@ -97,6 +97,8 @@ type CriarPagamentoPixParams = {
   pedido_id: string;
   /** Itens do pedido (recomendado pelo MP para aprovação e conciliação). */
   items?: MercadoPagoItem[];
+  /** Device ID do script security.js (X-meli-session-id) — melhora aprovação. */
+  device_id?: string | null;
 };
 
 /** Monta mensagem de erro a partir da resposta da API do Mercado Pago. */
@@ -154,13 +156,17 @@ export async function criarPagamentoPix(
         })),
       };
     }
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-Idempotency-Key": gerarIdempotencyKey(),
+    };
+    if (params.device_id?.trim()) {
+      headers["X-meli-session-id"] = params.device_id.trim();
+    }
     const res = await fetch(`${MP_API}/v1/payments`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "X-Idempotency-Key": gerarIdempotencyKey(),
-      },
+      headers,
       body: JSON.stringify(body),
     });
     const data = (await res.json()) as Record<string, unknown>;
@@ -200,6 +206,8 @@ type CriarPagamentoCartaoParams = {
   items?: MercadoPagoItem[];
   /** Nome que aparece na fatura do cartão (até 22 caracteres). */
   statement_descriptor?: string;
+  /** Device ID do script security.js (X-meli-session-id) — melhora aprovação. */
+  device_id?: string | null;
 };
 
 /** Cria um pagamento com cartão de crédito no Mercado Pago. */
@@ -254,13 +262,17 @@ export async function criarPagamentoCartao(
         })),
       };
     }
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-Idempotency-Key": gerarIdempotencyKey(),
+    };
+    if (params.device_id?.trim()) {
+      headers["X-meli-session-id"] = params.device_id.trim();
+    }
     const res = await fetch(`${MP_API}/v1/payments`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "X-Idempotency-Key": gerarIdempotencyKey(),
-      },
+      headers,
       body: JSON.stringify(body),
     });
     const data = await res.json();

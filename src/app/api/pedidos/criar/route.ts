@@ -13,13 +13,14 @@ type Item = { produto_id: string; produto_nome: string; preco_unitario: number; 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { cliente_nome, cliente_email, cliente_cpf, cliente_telefone, forma_pagamento, itens } = body as {
+    const { cliente_nome, cliente_email, cliente_cpf, cliente_telefone, forma_pagamento, itens, device_id } = body as {
       cliente_nome: string;
       cliente_email: string;
       cliente_cpf?: string;
       cliente_telefone?: string;
       forma_pagamento: "pix" | "credit_card" | "mercado_pago";
       itens: Item[];
+      device_id?: string;
     };
 
     if (!cliente_nome?.trim() || !cliente_email?.trim() || !Array.isArray(itens) || itens.length === 0) {
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
           category_id: "games",
           description: i.produto_nome,
         })),
+        ...(device_id?.trim() ? { device_id: device_id.trim() } : {}),
       });
       if (pix.ok && pix.payment_id) {
         await supabase

@@ -53,6 +53,21 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   const [numeroPedido, setNumeroPedido] = useState<number | null>(null);
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
+
+  // Device ID do Mercado Pago (melhora aprovação e pontuação da integração)
+  useEffect(() => {
+    if (typeof document === "undefined" || document.getElementById("mp-security-script")) return;
+    const script = document.createElement("script");
+    script.id = "mp-security-script";
+    script.src = "https://www.mercadopago.com/v2/security.js";
+    script.setAttribute("view", "checkout");
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      const el = document.getElementById("mp-security-script");
+      if (el?.parentNode) el.parentNode.removeChild(el);
+    };
+  }, []);
   const [copiaECola, setCopiaECola] = useState<string | null>(null);
 
   // Config MP (public key)
@@ -109,6 +124,8 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
 
   const criarPedido = useCallback(
     async (forma: "pix" | "credit_card") => {
+      const deviceId =
+        typeof window !== "undefined" ? (window as Window & { MP_DEVICE_SESSION_ID?: string }).MP_DEVICE_SESSION_ID : undefined;
       const res = await fetch("/api/pedidos/criar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,6 +139,7 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
         })(),
           forma_pagamento: forma,
           itens: itensPayload,
+          ...(deviceId ? { device_id: deviceId } : {}),
         }),
       });
       const data = await res.json();
@@ -174,6 +192,8 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
     setLoading(true);
     try {
       const data = await criarPedido("credit_card");
+      const deviceId =
+        typeof window !== "undefined" ? (window as Window & { MP_DEVICE_SESSION_ID?: string }).MP_DEVICE_SESSION_ID : undefined;
       const res = await fetch("/api/pagamentos/cartao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,6 +202,7 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
           token,
           installments,
           payer_nome: nome.trim(),
+          ...(deviceId ? { device_id: deviceId } : {}),
         }),
       });
       const result = await res.json();

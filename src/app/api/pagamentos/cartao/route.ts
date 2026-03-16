@@ -18,11 +18,12 @@ import { enviarEmailEntrega } from "@/lib/email-entrega";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { pedidoId, token, installments, payer_nome } = body as {
+    const { pedidoId, token, installments, payer_nome, device_id } = body as {
       pedidoId: string;
       token: string;
       installments?: number;
       payer_nome?: string;
+      device_id?: string;
     };
 
     if (!pedidoId?.trim() || !token?.trim()) {
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
         description: i.produto_nome,
       })),
       statement_descriptor: "EASYGAMES",
+      ...(device_id?.trim() ? { device_id: device_id.trim() } : {}),
     });
 
     if (!result.ok) {
