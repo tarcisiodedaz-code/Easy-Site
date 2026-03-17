@@ -66,6 +66,23 @@ export type MercadoPagoConfig = {
   taxaCartao?: number;
 } | null;
 
+/** Configuração do PagBank (Checkout / Link de Pagamento via redirect). */
+export type PagBankConfig = {
+  /** Token de autenticação enviado em `Authorization: Bearer <token>` (iBanking). */
+  token: string;
+  /** Sandbox (true) usa https://sandbox.api.pagseguro.com */
+  sandbox: boolean;
+  /** Limite de parcelas no cartão (padrão 12). */
+  installments_limit?: number;
+  /**
+   * Parcelas sem juros pagas pelo vendedor.
+   * Se não informado (ou 0), o comprador paga os juros (padrão recomendado).
+   */
+  interest_free_installments?: number;
+  /** Texto que aparece na fatura (até 17 caracteres). */
+  soft_descriptor?: string;
+} | null;
+
 export type LojaConfigMap = {
   utility_bar: UtilityBarItem[];
   carousel: CarouselSlide[];
@@ -91,6 +108,8 @@ export type LojaConfigMap = {
   banner_divisor: BannerDivisorConfig;
   /** Notificação de pedido no seu WhatsApp (CallMeBot). */
   whatsapp_notificacao: WhatsappNotificacaoConfig;
+  /** Credenciais e opções do PagBank. */
+  pagbank: PagBankConfig;
 };
 
 const DEFAULTS: LojaConfigMap = {
@@ -147,6 +166,7 @@ const DEFAULTS: LojaConfigMap = {
     ],
   } as BannerDivisorConfig,
   whatsapp_notificacao: null as WhatsappNotificacaoConfig,
+  pagbank: null as PagBankConfig,
 };
 
 export { DEFAULTS };

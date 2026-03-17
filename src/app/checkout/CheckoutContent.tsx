@@ -187,6 +187,36 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
     }
   }
 
+  async function handlePagBank() {
+    setErro(null);
+    setLoading(true);
+    try {
+      // Criar pedido sem disparar geração de PIX no Mercado Pago
+      const data = await criarPedido("credit_card");
+      const res = await fetch("/api/pagbank/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedidoId: data.pedidoId,
+          cliente_nome: nome.trim(),
+          cliente_email: email.trim(),
+          cliente_cpf: cpf.replace(/\D/g, "").slice(0, 11) || undefined,
+          cliente_telefone: (() => {
+            const d = telefone.replace(/\D/g, "").slice(0, 13);
+            return d.length >= 11 ? (d.startsWith("55") ? d : "55" + d.slice(0, 11)) : undefined;
+          })(),
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d?.pay_url) throw new Error(d?.erro || "Erro ao iniciar pagamento no PagBank.");
+      window.location.href = String(d.pay_url);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao iniciar PagBank.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleCartao(token: string, installments: number) {
     setErro(null);
     setLoading(true);
@@ -527,6 +557,27 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
                   Pagar com Cartão
                 </button>
               )}
+
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={handlePagBank}
+                  disabled={loading || !nome.trim() || !email.trim()}
+                  className="relative w-full overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/20 via-emerald-400/10 to-cyan-400/10 py-3.5 text-lg font-semibold text-white shadow-[0_0_28px_rgba(16,185,129,0.18)] transition-all hover:border-emerald-400/60 hover:shadow-[0_0_34px_rgba(16,185,129,0.26)] disabled:opacity-50"
+                >
+                  <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.28),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(34,211,238,0.18),transparent_50%)]" />
+                  <span className="relative flex items-center justify-center gap-2">
+                    {loading ? (
+                      "Iniciando PagBank…"
+                    ) : (
+                      <>
+                        <span>Pagar com PagBank</span>
+                        <span className="text-sm font-semibold text-emerald-200/90">Pix &amp; Cartão</span>
+                      </>
+                    )}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
