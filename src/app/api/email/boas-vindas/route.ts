@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM ?? "Easy Games <onboarding@resend.dev>";
 const BCC_ADMIN = process.env.EMAIL_BCC_ADMIN?.trim();
 
@@ -21,6 +20,7 @@ export async function POST(request: Request) {
     }
 
     const bcc = BCC_ADMIN ? [BCC_ADMIN] : undefined;
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
       from: FROM,
