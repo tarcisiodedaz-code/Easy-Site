@@ -18,12 +18,12 @@ export async function getLojaConfig<K extends keyof LojaConfigMap>(
 export async function getAllLojaConfig(): Promise<Partial<LojaConfigMap>> {
   const { data, error } = await supabase.from("loja_config").select("chave, valor");
   if (error || !data?.length) return {};
-  return data.reduce<Partial<LojaConfigMap>>((acc, row) => {
+  const result = data.reduce<Record<string, unknown>>((acc, row) => {
     const chave = row.chave as keyof LojaConfigMap;
-    const valor = row.valor as LojaConfigMap[keyof LojaConfigMap] | null;
-    if (chave in DEFAULTS) acc[chave] = valor ?? undefined;
+    if (chave in DEFAULTS) acc[chave] = row.valor ?? undefined;
     return acc;
   }, {});
+  return result as Partial<LojaConfigMap>;
 }
 
 /** Salva uma chave da config. Apenas admin (chamada após validateAdminSession). */
