@@ -41,6 +41,7 @@ const SITUACAO_LABEL: Record<SituacaoPedido, string> = {
   pago: "Pago",
   cancelado: "Cancelado",
   entregue: "Entregue",
+  rejeitado: "Rejeitado",
 };
 
 const SITUACAO_COR: Record<SituacaoPedido, string> = {
@@ -48,6 +49,7 @@ const SITUACAO_COR: Record<SituacaoPedido, string> = {
   pago: "bg-emerald-500",
   cancelado: "bg-red-500",
   entregue: "bg-blue-500",
+  rejeitado: "bg-red-600",
 };
 
 export function ListaPedidosAdmin({
@@ -140,7 +142,7 @@ export function ListaPedidosAdmin({
         <span className="text-sm text-zinc-500">
           Situação:
         </span>
-        {(["pendente", "pago", "cancelado", "entregue"] as SituacaoPedido[]).map((s) => (
+        {(["pendente", "pago", "cancelado", "entregue", "rejeitado"] as SituacaoPedido[]).map((s) => (
           <Link
             key={s}
             href={buildUrl({ situacao: filtroSituacao === s ? undefined : s, pagina: 1 })}
