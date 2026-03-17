@@ -19,7 +19,9 @@ export async function getAllLojaConfig(): Promise<Partial<LojaConfigMap>> {
   const { data, error } = await supabase.from("loja_config").select("chave, valor");
   if (error || !data?.length) return {};
   return data.reduce<Partial<LojaConfigMap>>((acc, row) => {
-    acc[row.chave as keyof LojaConfigMap] = row.valor as LojaConfigMap[keyof LojaConfigMap];
+    const chave = row.chave as keyof LojaConfigMap;
+    const valor = row.valor as LojaConfigMap[keyof LojaConfigMap] | null;
+    if (chave in DEFAULTS) acc[chave] = valor ?? undefined;
     return acc;
   }, {});
 }
