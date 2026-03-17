@@ -6,32 +6,18 @@ import { salvarPersonalise } from "./actions";
 type Props = {
   logoUrl: string | null;
   faviconUrl: string | null;
-  iconeMercadoPagoUrl: string | null;
-  iconePixUrl: string | null;
-  iconePS4Url: string | null;
-  iconePS5Url: string | null;
 };
 
 const LOGO_DIMENSOES = "320 × 64 px";
 const FAVICON_DIMENSOES = "32 × 32 px (ICO ou PNG)";
-const ICONE_PAGAMENTO_DIMENSOES = "64 × 64 px (PNG com fundo transparente)";
-const ICONE_CONSOLE_DIMENSOES = "64 × 64 px (PNG com fundo transparente)";
 
-export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, iconePixUrl, iconePS4Url, iconePS5Url }: Props) {
+export function PersonaliseClient({ logoUrl, faviconUrl }: Props) {
   const [logo, setLogo] = useState<string | null>(logoUrl);
   const [favicon, setFavicon] = useState<string | null>(faviconUrl);
-  const [iconeMercadoPago, setIconeMercadoPago] = useState<string | null>(iconeMercadoPagoUrl);
-  const [iconePix, setIconePix] = useState<string | null>(iconePixUrl);
-  const [iconePS4, setIconePS4] = useState<string | null>(iconePS4Url);
-  const [iconePS5, setIconePS5] = useState<string | null>(iconePS5Url);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
-  const mercadoPagoInputRef = useRef<HTMLInputElement>(null);
-  const pixInputRef = useRef<HTMLInputElement>(null);
-  const ps4InputRef = useRef<HTMLInputElement>(null);
-  const ps5InputRef = useRef<HTMLInputElement>(null);
 
   async function uploadFile(file: File, folder: string): Promise<string | null> {
     const formData = new FormData();
@@ -69,63 +55,11 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
     }
   }
 
-  async function handleMercadoPagoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setMsg(null);
-    try {
-      const url = await uploadFile(file, "icones-pagamento");
-      if (url) setIconeMercadoPago(url);
-    } catch (err) {
-      setMsg({ tipo: "erro", texto: err instanceof Error ? err.message : "Erro no upload" });
-    }
-  }
-
-  async function handlePixChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setMsg(null);
-    try {
-      const url = await uploadFile(file, "icones-pagamento");
-      if (url) setIconePix(url);
-    } catch (err) {
-      setMsg({ tipo: "erro", texto: err instanceof Error ? err.message : "Erro no upload" });
-    }
-  }
-
-  async function handlePS4Change(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setMsg(null);
-    try {
-      const url = await uploadFile(file, "icones-console");
-      if (url) setIconePS4(url);
-    } catch (err) {
-      setMsg({ tipo: "erro", texto: err instanceof Error ? err.message : "Erro no upload" });
-    }
-  }
-
-  async function handlePS5Change(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setMsg(null);
-    try {
-      const url = await uploadFile(file, "icones-console");
-      if (url) setIconePS5(url);
-    } catch (err) {
-      setMsg({ tipo: "erro", texto: err instanceof Error ? err.message : "Erro no upload" });
-    }
-  }
-
   async function handleSalvar() {
     setSaving(true);
     setMsg(null);
     try {
-      const res = await salvarPersonalise(logo, favicon, iconeMercadoPago, iconePix, iconePS4, iconePS5);
+      const res = await salvarPersonalise(logo, favicon);
       if (res.ok) {
         setMsg({ tipo: "ok", texto: "Configuração salva. Atualize a loja para ver as alterações." });
       } else {
@@ -243,246 +177,6 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
               className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
             >
               {favicon ? "Trocar ícone" : "Enviar favicon"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 border-t border-zinc-700 pt-6">
-          <button
-            type="button"
-            onClick={handleSalvar}
-            disabled={saving}
-            className="rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-50"
-          >
-            {saving ? "Salvando…" : "Salvar alterações"}
-          </button>
-        </div>
-      </div>
-
-      {/* Seção: Ícones de Pagamento */}
-      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800/50 px-6 pb-6 pt-4">
-        <h2 className="mb-2 text-lg font-semibold text-white">Ícones de Pagamento</h2>
-        <p className="mb-6 text-sm text-zinc-400">
-          Ícones exibidos na página de produto, ao lado dos métodos de pagamento.
-        </p>
-
-        {/* Ícone Mercado Pago */}
-        <div className="mb-8">
-          <h3 className="text-base font-medium text-white">Ícone Mercado Pago</h3>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            Exibido ao lado de &quot;Cartão via Mercado Pago&quot; na página de produto.
-          </p>
-          <div className="mt-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 px-4 py-3">
-            <p className="text-sm font-medium text-cyan-200">Dimensões recomendadas</p>
-            <p className="mt-1 text-lg font-bold text-cyan-100">{ICONE_PAGAMENTO_DIMENSOES}</p>
-            <p className="mt-1 text-xs text-cyan-200/90">
-              Use o logo oficial do Mercado Pago. PNG com fundo transparente funciona melhor.
-              Baixe em: <a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/additional-content/media-kit" target="_blank" rel="noopener noreferrer" className="underline">Media Kit Mercado Pago</a>
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            {iconeMercadoPago ? (
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-[#00AEEF]">
-                <img src={iconeMercadoPago} alt="Ícone Mercado Pago" className="h-10 w-10 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setIconeMercadoPago(null)}
-                  className="absolute -right-1 -top-1 rounded-full bg-red-600/90 p-0.5 text-white hover:bg-red-600"
-                  title="Remover ícone"
-                >
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-[#00AEEF]/20">
-                <span className="text-xs text-zinc-500">64×64</span>
-              </div>
-            )}
-            <input
-              ref={mercadoPagoInputRef}
-              type="file"
-              accept="image/png,image/svg+xml,image/webp"
-              onChange={handleMercadoPagoChange}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => mercadoPagoInputRef.current?.click()}
-              className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
-            >
-              {iconeMercadoPago ? "Trocar ícone" : "Enviar ícone"}
-            </button>
-          </div>
-        </div>
-
-        {/* Ícone Pix */}
-        <div>
-          <h3 className="text-base font-medium text-white">Ícone Pix</h3>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            Exibido ao lado de &quot;Pague com Pix&quot; na página de produto.
-          </p>
-          <div className="mt-3 rounded-lg border border-emerald-500/40 bg-emerald-950/30 px-4 py-3">
-            <p className="text-sm font-medium text-emerald-200">Dimensões recomendadas</p>
-            <p className="mt-1 text-lg font-bold text-emerald-100">{ICONE_PAGAMENTO_DIMENSOES}</p>
-            <p className="mt-1 text-xs text-emerald-200/90">
-              Use o logo oficial do Pix. PNG com fundo transparente funciona melhor.
-              Baixe em: <a href="https://www.bcb.gov.br/estabilidadefinanceira/pix" target="_blank" rel="noopener noreferrer" className="underline">Manual da Marca Pix (BCB)</a>
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            {iconePix ? (
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-[#32BCAD]">
-                <img src={iconePix} alt="Ícone Pix" className="h-10 w-10 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setIconePix(null)}
-                  className="absolute -right-1 -top-1 rounded-full bg-red-600/90 p-0.5 text-white hover:bg-red-600"
-                  title="Remover ícone"
-                >
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-[#32BCAD]/20">
-                <span className="text-xs text-zinc-500">64×64</span>
-              </div>
-            )}
-            <input
-              ref={pixInputRef}
-              type="file"
-              accept="image/png,image/svg+xml,image/webp"
-              onChange={handlePixChange}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => pixInputRef.current?.click()}
-              className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
-            >
-              {iconePix ? "Trocar ícone" : "Enviar ícone"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 border-t border-zinc-700 pt-6">
-          <button
-            type="button"
-            onClick={handleSalvar}
-            disabled={saving}
-            className="rounded-lg bg-cyan-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-50"
-          >
-            {saving ? "Salvando…" : "Salvar alterações"}
-          </button>
-        </div>
-      </div>
-
-      {/* Seção: Ícones de Console */}
-      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800/50 px-6 pb-6 pt-4">
-        <h2 className="mb-2 text-lg font-semibold text-white">Ícones de Console</h2>
-        <p className="mb-6 text-sm text-zinc-400">
-          Ícones exibidos no seletor de console na página de produto (PS4/PS5).
-        </p>
-
-        {/* Ícone PS4 */}
-        <div className="mb-8">
-          <h3 className="text-base font-medium text-white">Ícone PlayStation 4</h3>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            Exibido no card de seleção do PS4 na página de produto.
-          </p>
-          <div className="mt-3 rounded-lg border border-zinc-500/40 bg-zinc-900/30 px-4 py-3">
-            <p className="text-sm font-medium text-zinc-200">Dimensões recomendadas</p>
-            <p className="mt-1 text-lg font-bold text-zinc-100">{ICONE_CONSOLE_DIMENSOES}</p>
-            <p className="mt-1 text-xs text-zinc-300/90">
-              Use o logo oficial do PlayStation 4. PNG com fundo transparente funciona melhor.
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            {iconePS4 ? (
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-zinc-900">
-                <img src={iconePS4} alt="Ícone PS4" className="h-10 w-10 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setIconePS4(null)}
-                  className="absolute -right-1 -top-1 rounded-full bg-red-600/90 p-0.5 text-white hover:bg-red-600"
-                  title="Remover ícone"
-                >
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-zinc-900/50">
-                <span className="text-xs text-zinc-500">64×64</span>
-              </div>
-            )}
-            <input
-              ref={ps4InputRef}
-              type="file"
-              accept="image/png,image/svg+xml,image/webp"
-              onChange={handlePS4Change}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => ps4InputRef.current?.click()}
-              className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
-            >
-              {iconePS4 ? "Trocar ícone" : "Enviar ícone"}
-            </button>
-          </div>
-        </div>
-
-        {/* Ícone PS5 */}
-        <div>
-          <h3 className="text-base font-medium text-white">Ícone PlayStation 5</h3>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            Exibido no card de seleção do PS5 na página de produto.
-          </p>
-          <div className="mt-3 rounded-lg border border-zinc-500/40 bg-zinc-900/30 px-4 py-3">
-            <p className="text-sm font-medium text-zinc-200">Dimensões recomendadas</p>
-            <p className="mt-1 text-lg font-bold text-zinc-100">{ICONE_CONSOLE_DIMENSOES}</p>
-            <p className="mt-1 text-xs text-zinc-300/90">
-              Use o logo oficial do PlayStation 5. PNG com fundo transparente funciona melhor.
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            {iconePS5 ? (
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-zinc-900">
-                <img src={iconePS5} alt="Ícone PS5" className="h-10 w-10 object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setIconePS5(null)}
-                  className="absolute -right-1 -top-1 rounded-full bg-red-600/90 p-0.5 text-white hover:bg-red-600"
-                  title="Remover ícone"
-                >
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-zinc-900/50">
-                <span className="text-xs text-zinc-500">64×64</span>
-              </div>
-            )}
-            <input
-              ref={ps5InputRef}
-              type="file"
-              accept="image/png,image/svg+xml,image/webp"
-              onChange={handlePS5Change}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => ps5InputRef.current?.click()}
-              className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
-            >
-              {iconePS5 ? "Trocar ícone" : "Enviar ícone"}
             </button>
           </div>
         </div>

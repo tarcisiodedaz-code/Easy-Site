@@ -14,26 +14,17 @@ export type ProdutoEdicao = {
   preco_original: number;
   preco: number;
   preco_custo?: number | null;
-  preco_custo_ps4?: number | null;
-  preco_custo_ps5?: number | null;
-  preco_custo_anterior?: number | null;
   preco_promocional?: number | null;
-  preco_promocional_ps4?: number | null;
-  preco_promocional_ps5?: number | null;
-  usar_preco_promocional_por_console?: boolean;
   descricao?: string | null;
   ativo?: boolean;
   em_destaque?: boolean;
   gerenciar_estoque?: boolean;
   quantidade_estoque?: number;
-  quantidade_estoque_ps4?: number | null;
-  quantidade_estoque_ps5?: number | null;
   slug?: string | null;
+  /** Múltiplas categorias/subcategorias (tabela produto_categorias). Quando "Ofertas" está entre elas, é priorizada na listagem. */
   categoria_ids?: string[];
   oferta_inicio?: string | null;
   oferta_fim?: string | null;
-  disponivel_ps4?: boolean;
-  disponivel_ps5?: boolean;
 };
 
 export type ProdutoAdminRow = ProdutoLoja & {
@@ -55,63 +46,18 @@ export type ProdutoAdminRow = ProdutoLoja & {
   is_mais_vendido?: boolean;
 };
 
-// Nome da categoria de ofertas (usado em várias funções)
 const NOME_OFERTAS = "Ofertas";
-
-// Ordem de prioridade das categorias especiais (maior índice = maior prioridade)
-// Cada item contém variações possíveis do nome
-const CATEGORIAS_PRIORITARIAS: { nome: string; variacoes: string[] }[] = [
-  { nome: NOME_OFERTAS, variacoes: ["ofertas", "oferta"] },
-  { nome: "Pré-venda", variacoes: ["pré-venda", "pre-venda", "pré venda", "pre venda", "prevenda"] },
-];
-
-/**
- * Normaliza texto removendo acentos para comparação.
- */
-function normalizarTexto(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
 
 /**
  * Monta o texto de categorias para a listagem:
- * - Mostra categorias pai e também subcategorias com seu próprio nome.
- * - Prioriza categorias especiais na ordem: Pré-venda > Ofertas.
+ * - Mostra apenas categorias pai (subcategorias viram o nome do pai).
+ * - Se "Ofertas" estiver entre as selecionadas, exibe só "Ofertas".
  */
 function labelCategoriasParaListagem(
   catIds: string[],
   catMap: Record<string, { nome: string; parent_id: string | null }>,
   parentMap: Record<string, string>
 ): string | null {
-  // Coleta todos os nomes de categorias (pai e subcategorias)
-  const todosNomes = new Set<string>();
-  for (const id of catIds) {
-    const cat = catMap[id];
-    if (!cat) continue;
-    // Adiciona o nome da categoria
-    if (cat.nome) todosNomes.add(cat.nome);
-    // Se tem pai, adiciona também o nome do pai
-    if (cat.parent_id && parentMap[cat.parent_id]) {
-      todosNomes.add(parentMap[cat.parent_id]);
-    }
-  }
-  
-  if (todosNomes.size === 0) return null;
-  
-  // Verifica categorias prioritárias em ordem de prioridade (último = maior prioridade)
-  for (let i = CATEGORIAS_PRIORITARIAS.length - 1; i >= 0; i--) {
-    const catPrioritaria = CATEGORIAS_PRIORITARIAS[i];
-    const temCategoria = [...todosNomes].some((n) => {
-      const nomeNormalizado = normalizarTexto(n);
-      return catPrioritaria.variacoes.some((v) => nomeNormalizado === v || nomeNormalizado.includes(v));
-    });
-    if (temCategoria) return catPrioritaria.nome;
-  }
-  
-  // Se não tem categoria prioritária, mostra apenas categorias pai
   const nomesPai = new Set<string>();
   for (const id of catIds) {
     const cat = catMap[id];
@@ -119,7 +65,9 @@ function labelCategoriasParaListagem(
     const nomeExibir = cat.parent_id ? (parentMap[cat.parent_id] ?? cat.nome) : cat.nome;
     if (nomeExibir) nomesPai.add(nomeExibir);
   }
-  
+  if (nomesPai.size === 0) return null;
+  const temOfertas = [...nomesPai].some((n) => n.trim().toLowerCase() === NOME_OFERTAS.toLowerCase());
+  if (temOfertas) return NOME_OFERTAS;
   return [...nomesPai].sort().join(", ");
 }
 
@@ -166,7 +114,7 @@ export async function getProdutosParaAdmin(): Promise<ProdutoAdminRow[]> {
 
   const allCatIds = new Set<string>();
   (produtos as { id: string; categoria_id?: string; subcategoria_id?: string }[]).forEach((p) => {
-    const ids = (catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id]).filter((id): id is string => Boolean(id));
+    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean);
     ids.forEach((id) => allCatIds.add(id));
   });
   const ids = Array.from(allCatIds);
@@ -221,7 +169,7 @@ export async function getProdutosLixeira(): Promise<ProdutoAdminRow[]> {
   }
   const allCatIds = new Set<string>();
   (produtos as { id: string; categoria_id?: string; subcategoria_id?: string }[]).forEach((p) => {
-    const ids = (catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id]).filter((id): id is string => Boolean(id));
+    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean);
     ids.forEach((id) => allCatIds.add(id));
   });
   const ids = Array.from(allCatIds);
@@ -269,15 +217,7 @@ export async function atualizarProduto(
     preco: dados.preco,
   };
   if (dados.preco_custo !== undefined) update.preco_custo = dados.preco_custo;
-  if (dados.preco_custo_ps4 !== undefined) update.preco_custo_ps4 = dados.preco_custo_ps4;
-  if (dados.preco_custo_ps5 !== undefined) update.preco_custo_ps5 = dados.preco_custo_ps5;
-  if (dados.preco_custo_anterior !== undefined) update.preco_custo_anterior = dados.preco_custo_anterior;
   if (dados.preco_promocional !== undefined) update.preco_promocional = dados.preco_promocional;
-  if (dados.preco_promocional_ps4 !== undefined) update.preco_promocional_ps4 = dados.preco_promocional_ps4;
-  if (dados.preco_promocional_ps5 !== undefined) update.preco_promocional_ps5 = dados.preco_promocional_ps5;
-  if (dados.usar_preco_promocional_por_console !== undefined) update.usar_preco_promocional_por_console = dados.usar_preco_promocional_por_console;
-  if (dados.quantidade_estoque_ps4 !== undefined) update.quantidade_estoque_ps4 = dados.quantidade_estoque_ps4;
-  if (dados.quantidade_estoque_ps5 !== undefined) update.quantidade_estoque_ps5 = dados.quantidade_estoque_ps5;
   if (dados.descricao !== undefined) {
     const raw = typeof dados.descricao === "string" ? dados.descricao.trim() : "";
     update.descricao = raw ? descricaoPlayStationParaHtml(raw) : null;
@@ -292,8 +232,6 @@ export async function atualizarProduto(
   }
   if (dados.oferta_inicio !== undefined) update.oferta_inicio = dados.oferta_inicio || null;
   if (dados.oferta_fim !== undefined) update.oferta_fim = dados.oferta_fim || null;
-  if (dados.disponivel_ps4 !== undefined) update.disponivel_ps4 = dados.disponivel_ps4;
-  if (dados.disponivel_ps5 !== undefined) update.disponivel_ps5 = dados.disponivel_ps5;
   update.pendente_info = false;
   const { error } = await supabase.from("produtos_loja").update(update).eq("id", id);
   if (error) {
@@ -331,27 +269,6 @@ export async function moverParaLixeira(id: string): Promise<{ ok: boolean; erro?
   revalidatePath("/admin/produtos");
   revalidatePath("/admin/produtos/lixeira");
   return { ok: true };
-}
-
-/** Mover múltiplos produtos para a lixeira */
-export async function moverParaLixeiraEmMassa(ids: string[]): Promise<{ ok: boolean; count?: number; erro?: string }> {
-  if (!(await validateAdminSession())) return { ok: false, erro: "Não autorizado." };
-  if (!ids.length) return { ok: false, erro: "Nenhum produto selecionado." };
-  
-  const supabase = createAdminClient();
-  const { error, count } = await supabase
-    .from("produtos_loja")
-    .update({ deletado_em: new Date().toISOString() })
-    .in("id", ids);
-  
-  if (error) {
-    console.error("Erro ao mover para lixeira em massa:", error);
-    return { ok: false, erro: error.message };
-  }
-  
-  revalidatePath("/admin/produtos");
-  revalidatePath("/admin/produtos/lixeira");
-  return { ok: true, count: count ?? ids.length };
 }
 
 /** Restaurar da lixeira */
@@ -394,13 +311,7 @@ export async function encerrarPromocoesSelecionadas(
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("produtos_loja")
-    .update({
-      preco_promocional: null,
-      preco_promocional_ps4: null,
-      preco_promocional_ps5: null,
-      oferta_inicio: null,
-      oferta_fim: null,
-    })
+    .update({ preco_promocional: null, oferta_inicio: null, oferta_fim: null })
     .in("id", ids);
   if (error) {
     console.error("Erro ao encerrar promoções:", error);
@@ -464,13 +375,7 @@ export async function limparTodasOfertas(): Promise<{ ok: boolean; erro?: string
   if (ids.length === 0) return { ok: true, count: 0 };
   const { error } = await supabase
     .from("produtos_loja")
-    .update({
-      preco_promocional: null,
-      preco_promocional_ps4: null,
-      preco_promocional_ps5: null,
-      oferta_inicio: null,
-      oferta_fim: null,
-    })
+    .update({ preco_promocional: null, oferta_inicio: null, oferta_fim: null })
     .is("deletado_em", null);
   if (error) {
     console.error("Erro ao limpar ofertas:", error);
@@ -482,91 +387,5 @@ export async function limparTodasOfertas(): Promise<{ ok: boolean; erro?: string
     await supabase.from("produto_categorias").delete().eq("categoria_id", catId);
   }
   revalidatePath("/admin/produtos");
-  return { ok: true, count: ids.length };
-}
-
-/** Tira da aba Ofertas os produtos em oferta de origem Estoque: remove categoria Ofertas, limpa promo, restaura preço de custo = preço de custo base; mantém produto ativo e preço de venda. */
-export async function desativarOfertasEstoque(): Promise<{ ok: boolean; erro?: string; count?: number }> {
-  if (!(await validateAdminSession())) return { ok: false, erro: "Não autorizado." };
-  const supabase = createAdminClient();
-  const { data: rows, error: fetchError } = await supabase
-    .from("produtos_loja")
-    .select("id, preco_custo_anterior")
-    .is("deletado_em", null)
-    .like("id_externo", "estoque-%")
-    .or("preco_promocional.not.is.null,preco_promocional_ps4.not.is.null,preco_promocional_ps5.not.is.null");
-  if (fetchError || !rows?.length) {
-    return { ok: true, count: 0 };
-  }
-  const ids = (rows as { id: string; preco_custo_anterior: number | null }[]).map((r) => r.id);
-  for (const r of rows as { id: string; preco_custo_anterior: number | null }[]) {
-    const { error: updateError } = await supabase
-      .from("produtos_loja")
-      .update({
-        preco_promocional: null,
-        preco_promocional_ps4: null,
-        preco_promocional_ps5: null,
-        oferta_inicio: null,
-        oferta_fim: null,
-        preco_custo: r.preco_custo_anterior ?? null,
-        preco_custo_ps4: null,
-        preco_custo_ps5: null,
-        gerenciar_estoque: false,
-      })
-      .eq("id", r.id);
-    if (updateError) {
-      console.error("Erro ao tirar ofertas estoque:", updateError);
-      return { ok: false, erro: updateError.message };
-    }
-  }
-  const catId = await obterCategoriaOfertasId(supabase);
-  if (catId) {
-    await supabase.from("produto_categorias").delete().eq("categoria_id", catId).in("produto_id", ids);
-  }
-  revalidatePath("/admin/produtos");
-  revalidatePath("/");
-  return { ok: true, count: ids.length };
-}
-
-/** Tira da aba Ofertas os produtos em oferta de origem PlayStation: remove categoria Ofertas, limpa promo, restaura preço de custo = preço de custo base; mantém produto ativo e preço de venda. */
-export async function desativarOfertasPlayStation(): Promise<{ ok: boolean; erro?: string; count?: number }> {
-  if (!(await validateAdminSession())) return { ok: false, erro: "Não autorizado." };
-  const supabase = createAdminClient();
-  const { data: rows, error: fetchError } = await supabase
-    .from("produtos_loja")
-    .select("id, preco_custo_anterior")
-    .is("deletado_em", null)
-    .ilike("url_origem", "%playstation%")
-    .or("preco_promocional.not.is.null,preco_promocional_ps4.not.is.null,preco_promocional_ps5.not.is.null");
-  if (fetchError || !rows?.length) {
-    return { ok: true, count: 0 };
-  }
-  const ids = (rows as { id: string; preco_custo_anterior: number | null }[]).map((r) => r.id);
-  for (const r of rows as { id: string; preco_custo_anterior: number | null }[]) {
-    const { error: updateError } = await supabase
-      .from("produtos_loja")
-      .update({
-        preco_promocional: null,
-        preco_promocional_ps4: null,
-        preco_promocional_ps5: null,
-        oferta_inicio: null,
-        oferta_fim: null,
-        preco_custo: r.preco_custo_anterior ?? null,
-        preco_custo_ps4: null,
-        preco_custo_ps5: null,
-        gerenciar_estoque: false,
-      })
-      .eq("id", r.id);
-    if (updateError) {
-      console.error("Erro ao tirar ofertas PlayStation:", updateError);
-      return { ok: false, erro: updateError.message };
-    }
-  }
-  const catId = await obterCategoriaOfertasId(supabase);
-  if (catId) {
-    await supabase.from("produto_categorias").delete().eq("categoria_id", catId).in("produto_id", ids);
-  }
-  revalidatePath("/admin/produtos");
-  revalidatePath("/");
   return { ok: true, count: ids.length };
 }

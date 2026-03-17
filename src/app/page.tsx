@@ -1,7 +1,6 @@
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { UtilityBar } from "@/components/UtilityBar";
-import { BannerDivisor } from "@/components/BannerDivisor";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { PreSaleBanner } from "@/components/PreSaleBanner";
 import { VitrineMaisVendidos } from "@/components/VitrineMaisVendidos";
@@ -10,17 +9,13 @@ import { VitrineDestaques } from "@/components/VitrineDestaques";
 import { getLojaConfig } from "@/lib/loja-config";
 import { getConfigHome } from "@/lib/config-home";
 import { getProdutosMaisVendidos, getProdutosLancamentos, getProdutosDestaques } from "@/lib/vitrine";
-import { getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
 
 export default async function Home() {
-  const [utilityBar, carousel, preSale, configHome, logoMarca, categoriasMenu, bannerDivisor] = await Promise.all([
+  const [utilityBar, carousel, preSale, configHome] = await Promise.all([
     getLojaConfig("utility_bar"),
     getLojaConfig("carousel"),
     getLojaConfig("pre_sale"),
     getConfigHome(),
-    getLojaConfig("logo_marca"),
-    getCategoriasProdutoParaMenu(),
-    getLojaConfig("banner_divisor"),
   ]);
 
   const precisaMaisVendidos = configHome.ordem_secoes.includes("mais_vendidos");
@@ -43,18 +38,14 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
+      <StoreHeader />
 
       <main className="pt-[130px] sm:pt-[140px] md:pt-[150px]">
         <section className="mb-10 md:mb-14">
           <HeroCarousel slides={carousel} />
         </section>
         <section className="mb-10 md:mb-14">
-          {bannerDivisor?.ativo ? (
-            <BannerDivisor config={bannerDivisor} />
-          ) : (
-            <UtilityBar items={utilityBar} showLogin={false} />
-          )}
+          <UtilityBar items={utilityBar} showLogin={false} />
         </section>
         <section className="mb-12 md:mb-16">
           <PreSaleBanner
@@ -67,9 +58,7 @@ export default async function Home() {
         </section>
 
         <div className="mx-auto w-full max-w-7xl">
-          {configHome.ordem_secoes.map((key) => (
-            <div key={key}>{getSecao(key) ?? null}</div>
-          ))}
+          {configHome.ordem_secoes.map((key) => getSecao(key) ?? null)}
         </div>
       </main>
 

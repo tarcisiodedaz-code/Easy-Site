@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { consultarPagamento } from "@/lib/mercado-pago";
 
-/** Converte status_detail do MP em mensagem legível para o usuário. */
 function traduzirStatusDetailRejeicao(statusDetail: string): string {
   const map: Record<string, string> = {
     rejected_insufficient_data: "Dados insuficientes para processar o PIX. Verifique nome, e-mail e CPF.",
@@ -65,8 +64,7 @@ export async function GET(
         pedidoId: pedido.id,
         situacao,
         payment_status: mp.status,
-        status_detail: mp.status_detail ?? undefined,
-        mensagem: mensagem ?? undefined,
+        ...(mensagem ? { mensagem } : {}),
       });
     }
   }

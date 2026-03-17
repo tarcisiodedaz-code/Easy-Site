@@ -8,14 +8,14 @@ import type { MercadoPagoConfig } from "@/types/loja-config";
 
 const MP_API = "https://api.mercadopago.com";
 
-/** URL base do site (para notification_url do webhook). Configure NEXT_PUBLIC_SITE_URL na Vercel. */
+/** URL base do site (para notification_url). Configure NEXT_PUBLIC_SITE_URL na Vercel. */
 function getBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (url) return url.replace(/\/$/, "");
   return "https://easygames.store";
 }
 
-/** Gera um ID único para o header X-Idempotency-Key */
+/** Gera ID único para X-Idempotency-Key. */
 function gerarIdempotencyKey(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
@@ -78,7 +78,7 @@ export async function testarConexaoMercadoPago(): Promise<{ ok: boolean; mensage
   }
 }
 
-/** Item para additional_info.items (melhora aprovação e conciliação no MP). */
+/** Item para additional_info.items (melhora aprovação no MP). */
 export type MercadoPagoItem = {
   id: string;
   title: string;
@@ -95,20 +95,15 @@ type CriarPagamentoPixParams = {
   payer_cpf?: string | null;
   description: string;
   pedido_id: string;
-  /** Itens do pedido (recomendado pelo MP para aprovação e conciliação). */
   items?: MercadoPagoItem[];
-  /** Device ID do script security.js (X-meli-session-id) — melhora aprovação. */
   device_id?: string | null;
 };
 
-/** Monta mensagem de erro a partir da resposta da API do Mercado Pago. */
 function extrairErroMp(data: Record<string, unknown>, status: number): string {
   const msg = data.message ?? data.error;
   if (typeof msg === "string" && msg.trim()) return msg.trim();
   const cause = data.cause as Array<{ description?: string }> | undefined;
   if (Array.isArray(cause) && cause[0]?.description) return cause[0].description;
-  const statusDetail = data.status_detail;
-  if (typeof statusDetail === "string" && statusDetail.trim()) return statusDetail.trim();
   return `Erro ${status}`;
 }
 
@@ -148,11 +143,11 @@ export async function criarPagamentoPix(
       body.additional_info = {
         items: params.items.map((i) => ({
           id: i.id,
-          title: i.title.slice(0, 256),
+          title: (i.title || "").slice(0, 256),
           quantity: i.quantity,
           unit_price: i.unit_price,
           ...(i.category_id ? { category_id: i.category_id } : {}),
-          ...(i.description ? { description: i.description.slice(0, 256) } : {}),
+          ...(i.description ? { description: (i.description || "").slice(0, 256) } : {}),
         })),
       };
     }
@@ -161,9 +156,7 @@ export async function criarPagamentoPix(
       Authorization: `Bearer ${token}`,
       "X-Idempotency-Key": gerarIdempotencyKey(),
     };
-    if (params.device_id?.trim()) {
-      headers["X-meli-session-id"] = params.device_id.trim();
-    }
+    if (params.device_id?.trim()) headers["X-meli-session-id"] = params.device_id.trim();
     const res = await fetch(`${MP_API}/v1/payments`, {
       method: "POST",
       headers,
@@ -181,10 +174,7 @@ export async function criarPagamentoPix(
         ticket_url: (poiSafe.ticket_url as string) ?? undefined,
       };
     }
-    return {
-      ok: false,
-      erro: extrairErroMp(data, res.status),
-    };
+    return { ok: false, erro: extrairErroMp(data, res.status) };
   } catch (e) {
     return {
       ok: false,
@@ -202,11 +192,8 @@ type CriarPagamentoCartaoParams = {
   payer_cpf?: string | null;
   description: string;
   pedido_id: string;
-  /** Itens do pedido (recomendado pelo MP para aprovação e conciliação). */
   items?: MercadoPagoItem[];
-  /** Nome que aparece na fatura do cartão (até 22 caracteres). */
   statement_descriptor?: string;
-  /** Device ID do script security.js (X-meli-session-id) — melhora aprovação. */
   device_id?: string | null;
 };
 
@@ -227,6 +214,7 @@ export async function criarPagamentoCartao(
   try {
     const body: Record<string, unknown> = {
       transaction_amount: params.transaction_amount,
+      payment_method_id: "credit_card",
       token: params.token,
       installments: params.installments,
       payer: {
@@ -246,19 +234,17 @@ export async function criarPagamentoCartao(
       metadata: { pedido_id: params.pedido_id },
       notification_url: `${getBaseUrl()}/api/webhooks/mercado-pago`,
       external_reference: params.pedido_id,
-      ...(params.statement_descriptor
-        ? { statement_descriptor: params.statement_descriptor.slice(0, 22) }
-        : {}),
+      ...(params.statement_descriptor ? { statement_descriptor: params.statement_descriptor.slice(0, 22) } : {}),
     };
     if (params.items?.length) {
       body.additional_info = {
         items: params.items.map((i) => ({
           id: i.id,
-          title: i.title.slice(0, 256),
+          title: (i.title || "").slice(0, 256),
           quantity: i.quantity,
           unit_price: i.unit_price,
           ...(i.category_id ? { category_id: i.category_id } : {}),
-          ...(i.description ? { description: i.description.slice(0, 256) } : {}),
+          ...(i.description ? { description: (i.description || "").slice(0, 256) } : {}),
         })),
       };
     }
@@ -267,9 +253,7 @@ export async function criarPagamentoCartao(
       Authorization: `Bearer ${token}`,
       "X-Idempotency-Key": gerarIdempotencyKey(),
     };
-    if (params.device_id?.trim()) {
-      headers["X-meli-session-id"] = params.device_id.trim();
-    }
+    if (params.device_id?.trim()) headers["X-meli-session-id"] = params.device_id.trim();
     const res = await fetch(`${MP_API}/v1/payments`, {
       method: "POST",
       headers,
@@ -296,7 +280,7 @@ export async function criarPagamentoCartao(
   }
 }
 
-/** Consulta status de um pagamento no MP. Retorna status e status_detail (motivo de rejeição, etc.). */
+/** Consulta status de um pagamento no MP. */
 export async function consultarPagamento(
   paymentId: string
 ): Promise<{ status?: string; status_detail?: string; erro?: string }> {

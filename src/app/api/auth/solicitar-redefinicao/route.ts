@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase-admin";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_build_placeholder");
+const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.EMAIL_FROM ?? "Easy Games <onboarding@resend.dev>";
 const BCC_ADMIN = process.env.EMAIL_BCC_ADMIN?.trim();
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://easygames.store";

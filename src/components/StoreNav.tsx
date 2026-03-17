@@ -8,10 +8,10 @@ import type { CategoriaMenu } from "@/lib/produtos-completo";
 import type { ProdutoLoja } from "@/lib/supabase";
 
 const FALLBACK_MENU: CategoriaMenu[] = [
-  { id: "gift-card", nome: "Gift Card", slug: "gift-card", href: "/categorias/gift-card", icon_url: null, filhos: [] },
-  { id: "ps5", nome: "PlayStation 5", slug: "ps5", href: "/categorias/ps5", icon_url: null, filhos: [] },
-  { id: "ps4", nome: "PlayStation 4", slug: "ps4", href: "/categorias/ps4", icon_url: null, filhos: [] },
-  { id: "ofertas", nome: "Ofertas", slug: "ofertas", href: "/categorias/ofertas", icon_url: null, filhos: [] },
+  { id: "gift-card", nome: "Gift Card", slug: "gift-card", href: "/categorias/gift-card", filhos: [] },
+  { id: "ps5", nome: "PlayStation 5", slug: "ps5", href: "/categorias/ps5", filhos: [] },
+  { id: "ps4", nome: "PlayStation 4", slug: "ps4", href: "/categorias/ps4", filhos: [] },
+  { id: "ofertas", nome: "Ofertas", slug: "ofertas", href: "/categorias/ofertas", filhos: [] },
 ];
 
 /** Subcategorias padrão do mega menu de Ofertas (quando não houver filhos no Supabase) */
@@ -52,14 +52,8 @@ function ordenarMenu(itens: CategoriaMenu[]): CategoriaMenu[] {
 
 const DROPDOWN_CLOSE_DELAY_MS = 500;
 
-type StoreNavProps = {
-  categoriasIniciais?: CategoriaMenu[] | null;
-};
-
-export function StoreNav({ categoriasIniciais }: StoreNavProps = {}) {
-  const [itens, setItens] = useState<CategoriaMenu[]>(
-    categoriasIniciais ? ordenarMenu(categoriasIniciais) : []
-  );
+export function StoreNav() {
+  const [itens, setItens] = useState<CategoriaMenu[]>([]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [produtosOfertas, setProdutosOfertas] = useState<ProdutoLoja[]>([]);
   const [ofertasLoading, setOfertasLoading] = useState(false);
@@ -80,12 +74,11 @@ export function StoreNav({ categoriasIniciais }: StoreNavProps = {}) {
   }
 
   useEffect(() => {
-    if (categoriasIniciais) return;
     fetch("/api/categorias-menu")
       .then((r) => r.json())
       .then((data: CategoriaMenu[]) => setItens(ordenarMenu(data)))
       .catch(() => setItens(FALLBACK_MENU));
-  }, [categoriasIniciais]);
+  }, []);
 
   const menu = itens.length > 0 ? itens : FALLBACK_MENU;
   const ofertasIndex = menu.findIndex((m) => m.nome.toLowerCase().includes("oferta") || m.slug === "ofertas");
@@ -139,12 +132,7 @@ export function StoreNav({ categoriasIniciais }: StoreNavProps = {}) {
                     : `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800/80 [&_svg]:text-white`
                 }
               >
-                {/* Ícone: usa imagem customizada se disponível, senão usa ícone padrão */}
-                {item.icon_url ? (
-                  <img src={item.icon_url} alt="" className="h-7 w-7 object-contain" />
-                ) : (
-                  getNavIcon(isOferta ? "percent" : "pages")
-                )}
+                {getNavIcon(isOferta ? "percent" : "pages")}
                 <span className="tracking-wide">{isOferta ? "OFERTAS ESPECIAS" : item.nome.toUpperCase()}</span>
                 {(hasDropdown || showOfertasMega) && (
                   <svg className="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">

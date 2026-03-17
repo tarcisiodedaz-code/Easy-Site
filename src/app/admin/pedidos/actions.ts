@@ -7,7 +7,6 @@ import {
   getPedidoPorId,
   buscarContaDisponivel,
   atribuirContaAoItem,
-  type SituacaoPedido,
 } from "@/lib/pedidos";
 import { enviarEmailEntrega } from "@/lib/email-entrega";
 
@@ -15,12 +14,6 @@ export async function cancelarPedido(id: string) {
   if (!(await validateAdminSession())) return { ok: false, erro: "Não autorizado." };
   const ok = await atualizarSituacaoPedido(id, "cancelado");
   return ok ? { ok: true } : { ok: false, erro: "Erro ao cancelar." };
-}
-
-export async function alterarSituacaoPedido(id: string, situacao: SituacaoPedido) {
-  if (!(await validateAdminSession())) return { ok: false, erro: "Não autorizado." };
-  const ok = await atualizarSituacaoPedido(id, situacao);
-  return ok ? { ok: true } : { ok: false, erro: "Erro ao atualizar situação." };
 }
 
 export async function reenviarEmailEntrega(id: string) {

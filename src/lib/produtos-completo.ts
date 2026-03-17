@@ -5,7 +5,6 @@ export type CategoriaProduto = {
   nome: string;
   parent_id: string | null;
   slug?: string | null;
-  icon_url?: string | null;
 };
 
 export type ProdutoCompleto = {
@@ -32,13 +31,13 @@ export type ProdutoCompleto = {
 export async function getCategoriasProduto(): Promise<CategoriaProduto[]> {
   const { data, error } = await supabase
     .from("categorias_produto")
-    .select("id, nome, parent_id, icon_url")
+    .select("id, nome, parent_id")
     .order("nome");
   if (error) {
     console.error("Erro ao buscar categorias produto:", error);
     return [];
   }
-  const rows = (data ?? []) as { id: string; nome: string; parent_id: string | null; icon_url?: string | null }[];
+  const rows = (data ?? []) as { id: string; nome: string; parent_id: string | null }[];
   return rows.map((r) => ({ ...r, slug: null }));
 }
 
@@ -48,8 +47,7 @@ export type CategoriaMenu = {
   nome: string;
   slug: string | null;
   href: string;
-  icon_url?: string | null;
-  filhos: { id: string; nome: string; slug: string | null; href: string; icon_url?: string | null }[];
+  filhos: { id: string; nome: string; slug: string | null; href: string }[];
 };
 
 export async function getCategoriasProdutoParaMenu(): Promise<CategoriaMenu[]> {
@@ -65,10 +63,9 @@ export async function getCategoriasProdutoParaMenu(): Promise<CategoriaMenu[]> {
         nome: p.nome,
         slug: ps,
         href: `/categorias/${ps}`,
-        icon_url: p.icon_url ?? null,
         filhos: filhosPai.map((f) => {
           const fs = slug(f);
-          return { id: f.id, nome: f.nome, slug: fs, href: `/categorias/${ps}/${fs}`, icon_url: f.icon_url ?? null };
+          return { id: f.id, nome: f.nome, slug: fs, href: `/categorias/${ps}/${fs}` };
         }),
       };
     });

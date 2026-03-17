@@ -17,16 +17,11 @@ Projeto Next.js com Tailwind CSS para a loja **Easy Games**.
 
 ## Rodar o projeto
 
-**Importante:** use a pasta raiz do projeto (onde está o `package.json`), por exemplo:
-`C:\Users\tarci\Documents\Easy Site`
-
 ```bash
 npm run dev
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000). A página de importação fica em **/admin/importar**.
-
-**Se o site ficar só carregando:** confira se o arquivo `.env.local` está nessa mesma pasta e se tem `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` preenchidos. Se mudou de pasta, apague a pasta `.next` e rode `npm run dev` de novo.
 
 ## Funcionalidades
 

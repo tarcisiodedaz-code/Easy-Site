@@ -1,14 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProdutoPorSlug, getProdutoPorId } from "@/lib/produtos";
-import { getCategoriaIdsDoProduto, getProdutosRelacionados, getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
+import { getCategoriaIdsDoProduto, getProdutosRelacionados } from "@/lib/produtos-completo";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
 import { getLojaConfig } from "@/lib/loja-config";
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
+import { AddToCartButton } from "@/components/AddToCartButton";
 import { ProdutoCard } from "@/components/ProdutoCard";
-import { ProdutoPageClient } from "./ProdutoPageClient";
 import type { ProdutoLoja } from "@/lib/supabase";
+
+const WHATSAPP_NUMERO = "5579999204322";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,25 +31,36 @@ export default async function ProdutoSlugPage({ params }: Props) {
   if (!produto) produto = await getProdutoPorId(slug);
   if (!produto) notFound();
 
-  const [categoriaIds, relacionados, informacoesAdicionaisConfig, mercadoPagoConfig, iconeMercadoPago, iconePix, iconePS4, iconePS5, logoMarca, categoriasMenu] = await Promise.all([
+  const [categoriaIds, relacionados, informacoesAdicionaisConfig] = await Promise.all([
     getCategoriaIdsDoProduto(produto.id!),
     getCategoriaIdsDoProduto(produto.id!).then((ids) => getProdutosRelacionados(produto!.id!, ids, 4)),
     getLojaConfig("informacoes_adicionais"),
-    getLojaConfig("mercado_pago"),
-    getLojaConfig("icone_mercado_pago"),
-    getLojaConfig("icone_pix"),
-    getLojaConfig("icone_ps4"),
-    getLojaConfig("icone_ps5"),
-    getLojaConfig("logo_marca"),
-    getCategoriasProdutoParaMenu(),
   ]);
-
-  const taxaCartao = mercadoPagoConfig?.taxaCartao ?? 5;
 
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
     "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80";
 
+  const promo = produto.preco_promocional;
+  const temPromoValida =
+    promo != null &&
+    Number(promo) > 0 &&
+    (produto.oferta_inicio ? new Date(produto.oferta_inicio).getTime() <= Date.now() : true) &&
+    (produto.oferta_fim ? new Date(produto.oferta_fim).getTime() >= Date.now() : true);
+  const precoExibir = temPromoValida && promo != null ? Number(promo) : produto.preco;
+  const precoRiscado = temPromoValida ? produto.preco : null;
+  const percentualDesconto =
+    temPromoValida && Number(produto.preco) > 0 && promo != null && Number(promo) > 0
+      ? Math.round(((Number(produto.preco) - Number(promo)) / Number(produto.preco)) * 100)
+      : 0;
+
+  const precoFormatado = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(precoExibir);
+  const whatsappMsg = `Olá! Gostaria de comprar: ${produto.nome} - ${precoFormatado}`;
+  const indisponivel =
+    produto.gerenciar_estoque === true && (produto.quantidade_estoque ?? 0) <= 0;
   const produtoComDescricao = produto as ProdutoLoja & { descricao?: string | null };
   const descricaoHtml = produtoComDescricao.descricao ?? "";
   const informacoesAdicionaisHtml =
@@ -56,7 +70,7 @@ export default async function ProdutoSlugPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
+      <StoreHeader />
 
       <main className="mx-auto max-w-7xl px-4 pt-[130px] pb-16 sm:px-6 sm:pt-[140px] md:pt-[150px] lg:px-8">
         <Link
@@ -66,18 +80,85 @@ export default async function ProdutoSlugPage({ params }: Props) {
           ← Voltar às ofertas
         </Link>
 
-        {/* Área de destaque com seletor de versão */}
-        <ProdutoPageClient
-          produto={produto as ProdutoLoja & { descricao?: string | null }}
-          imagemUrl={imagemUrl}
-          informacoesAdicionaisHtml={informacoesAdicionaisHtml}
-          descricaoHtml={descricaoHtml}
-          taxaCartaoInicial={taxaCartao}
-          iconeMercadoPagoInicial={iconeMercadoPago?.url ?? null}
-          iconePixInicial={iconePix?.url ?? null}
-          iconePS4Inicial={iconePS4?.url ?? null}
-          iconePS5Inicial={iconePS5?.url ?? null}
-        />
+        {/* Área de destaque (topo): capa à esquerda, info à direita */}
+        <section className="grid gap-8 md:grid-cols-[minmax(0,340px)_1fr] lg:gap-12">
+          <div className="relative aspect-[3/4] max-h-[480px] w-full overflow-hidden rounded-xl bg-zinc-900 md:max-h-none">
+            <Image
+              src={imagemUrl}
+              alt={produto.nome}
+              width={340}
+              height={453}
+              className="h-full w-full object-cover"
+              priority
+              unoptimized={imagemUrl.startsWith("http") && !imagemUrl.includes("supabase")}
+            />
+            {temPromoValida && percentualDesconto > 0 && (
+              <div className="absolute right-3 top-3 z-10">
+                <span className="inline-flex rounded-lg px-3 py-1.5 text-sm font-bold shadow-lg bg-gradient-to-r from-[#6366f1] to-[#4ade80] text-white">
+                  -{percentualDesconto}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col justify-center">
+            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[2.75rem]">
+              {produto.nome}
+            </h1>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-200">
+                PS5
+              </span>
+              <span className="rounded bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-200">
+                PS4
+              </span>
+            </div>
+            <div className="mt-6 space-y-1">
+              <p className="text-3xl font-bold text-emerald-400 sm:text-4xl">{precoFormatado}</p>
+              {precoRiscado != null && (
+                <p className="text-lg text-zinc-500 line-through">
+                  De{" "}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(precoRiscado)}
+                </p>
+              )}
+              <p className="text-sm text-zinc-400">ou em até 12x</p>
+              <p className="text-sm text-zinc-400">Pague com Pix</p>
+            </div>
+            <div className="mt-8 flex max-w-[320px] flex-col gap-2.5">
+              {indisponivel ? (
+                <div className="rounded-xl border border-amber-600/50 bg-amber-950/20 py-3 text-center text-sm text-amber-400">
+                  Produto indisponível no momento (estoque esgotado).
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/login?redirect=/carrinho"
+                    className="flex w-full items-center justify-center rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
+                  >
+                    Comprar
+                  </Link>
+                  <AddToCartButton
+                    produto={{ ...produto, preco: precoExibir }}
+                    className="w-full rounded-xl px-6 py-3 text-sm font-semibold"
+                  >
+                    Adicionar ao carrinho
+                  </AddToCartButton>
+                </>
+              )}
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(whatsappMsg)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[var(--accent)] bg-transparent px-6 py-2.5 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)] hover:text-white"
+              >
+                Comprar agora via WhatsApp
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* Área de conteúdo: largura total, abaixo da capa */}
         <div className="mx-auto mt-16 w-full max-w-4xl">

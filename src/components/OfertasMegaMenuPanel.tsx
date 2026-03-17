@@ -2,16 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useEffect, useState, useCallback, memo } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { CountdownTimer } from "./CountdownTimer";
 import { getImagemAltaResolucao } from "@/lib/imagem-playstation";
-import { formatBRL, calcularParcela } from "@/lib/utils/formatters";
 import type { ProdutoLoja } from "@/lib/supabase";
 
 const MINI_CARD_WIDTH = 168;
 const MINI_GAP = 12;
-const MINI_VISIBLE_WIDTH = MINI_CARD_WIDTH * 4 + MINI_GAP * 3;
+const MINI_VISIBLE_WIDTH = MINI_CARD_WIDTH * 4 + MINI_GAP * 3; // 708px - precisa caber na coluna direita
 const AUTOPLAY_MS = 3000;
+
+function formatarPreco(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(valor);
+}
 
 function temOfertaValida(produto: ProdutoLoja): boolean {
   const promo = produto.preco_promocional;
@@ -40,17 +46,15 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
       ? Math.round(((precoDeNum - precoExibirNum) / precoDeNum) * 100)
       : 0;
   const slug = (produto as { slug?: string | null }).slug ?? produto.id ?? produto.id_externo;
-  const parcela = calcularParcela(precoExibirNum, 5);
 
   return (
     <Link
       href={`/produto/${slug}`}
       onClick={onClick}
-      className="group flex shrink-0 flex-col overflow-hidden rounded-xl bg-white transition-shadow hover:shadow-lg"
+      className="group flex shrink-0 flex-col overflow-hidden rounded-[16px] border border-zinc-200 bg-white transition-shadow hover:shadow-md"
       style={{ width: MINI_CARD_WIDTH }}
     >
-      {/* Imagem ocupando 100% sem bordas */}
-      <div className="relative w-full overflow-hidden bg-zinc-100" style={{ aspectRatio: "3/4" }}>
+      <div className="relative w-full overflow-hidden rounded-t-[16px] bg-zinc-100" style={{ aspectRatio: "3/4" }}>
         <Image
           src={imagemUrl}
           alt={produto.nome}
@@ -59,35 +63,24 @@ function MiniCard({ produto, onClick }: { produto: ProdutoLoja; onClick: () => v
           sizes="180px"
           unoptimized={imagemUrl.startsWith("http") && !imagemUrl.includes("supabase")}
         />
-        {/* Badge de desconto - texto ajustado para caber no círculo */}
         {emOferta && percentualDesconto > 0 && (
-          <div className="absolute left-1.5 top-1.5 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-red-600 shadow-lg">
-            <span className="text-[11px] font-bold leading-none text-white">-{percentualDesconto}%</span>
+          <div className="absolute left-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-cyan-500 shadow">
+            <span className="text-[10px] font-bold text-white">{percentualDesconto}% OFF</span>
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col p-2.5">
-        {/* Nome do produto */}
-        <h3 className="line-clamp-2 text-xs font-semibold leading-tight text-zinc-800 group-hover:text-zinc-900">
+        <h3 className="line-clamp-2 text-xs font-medium leading-tight text-zinc-800 group-hover:text-zinc-900">
           {produto.nome}
         </h3>
-        
-        <div className="mt-2 flex flex-col gap-0.5">
-          {/* Preço de tabela - riscado */}
-          {precoDeNum > precoExibirNum && (
-            <p className="text-[10px] text-zinc-400 line-through">
-              De {formatBRL(precoDeNum)}
-            </p>
-          )}
-          
-          {/* Preço PIX - destaque azul (cyan) */}
-          <p className="text-sm font-bold text-cyan-600">
-            {formatBRL(precoExibirNum)} <span className="text-xs font-medium">no PIX</span>
+        <div className="mt-1.5 flex flex-col gap-0.5">
+          <p className="text-[11px] text-zinc-500">
+            De {formatarPreco(precoDe)} por{" "}
+            <span className="font-semibold text-zinc-900">{formatarPreco(precoExibir)}</span>
           </p>
-          
-          {/* Parcelamento com 5% */}
-          <p className="text-[10px] text-zinc-500">
-            ou 12x de {formatBRL(parcela)} no cartão
+          <p className="flex items-center gap-1 text-xs font-bold text-cyan-600">
+            <span className="text-cyan-500" aria-hidden>◆</span>
+            {formatarPreco(precoExibir)} via PIX
           </p>
         </div>
       </div>
@@ -183,9 +176,9 @@ export function OfertasMegaMenuPanel({ produtos, dataFinalGlobal, onClose }: Ofe
       {/* Painel esquerdo: largura fixa para que a direita tenha 708px+ para 4 cards */}
       <div className="flex w-[260px] shrink-0 flex-col items-center justify-between border-r border-zinc-700/50 bg-zinc-800/80 p-5 sm:w-[272px]">
         <div className="flex flex-col items-center text-center">
-          <h3 className="text-xl font-bold text-white sm:text-[22px]">Ofertas Exclusivas!</h3>
+          <h3 className="text-xl font-bold text-white sm:text-[22px]">Promoção imperdível!</h3>
           <p className="mt-2 text-sm leading-snug text-zinc-300 sm:text-[15px]">
-            Preços reduzidos por tempo limitado. Aproveite as melhores condições da loja.
+            Produtos com até 30% OFF + 5% em pagamentos via PIX
           </p>
           <div className="mt-4 flex flex-col items-center">
             <p className="mb-2 text-sm font-bold uppercase tracking-wider text-zinc-300">

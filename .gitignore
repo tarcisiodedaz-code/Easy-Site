@@ -39,6 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# pasta duplicada (copiar projeto): não usar nem versionar
-/easy-games/

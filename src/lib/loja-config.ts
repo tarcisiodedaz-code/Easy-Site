@@ -19,9 +19,7 @@ export async function getAllLojaConfig(): Promise<Partial<LojaConfigMap>> {
   const { data, error } = await supabase.from("loja_config").select("chave, valor");
   if (error || !data?.length) return {};
   return data.reduce<Partial<LojaConfigMap>>((acc, row) => {
-    if (row.valor != null) {
-      (acc as Record<string, unknown>)[row.chave] = row.valor;
-    }
+    acc[row.chave as keyof LojaConfigMap] = row.valor as LojaConfigMap[keyof LojaConfigMap];
     return acc;
   }, {});
 }

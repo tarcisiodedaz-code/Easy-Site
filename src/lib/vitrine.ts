@@ -25,7 +25,7 @@ export async function getProdutosMaisVendidos(limit = 8): Promise<ProdutoLoja[]>
 
   const pedidoIds = (pedidosPagos ?? []).map((p: { id: string }) => p.id);
   if (pedidoIds.length === 0) {
-    return await getProdutosMaisVendidosFallback(limit);
+    return getProdutosMaisVendidosFallback(limit);
   }
 
   const { data: itens } = await supabase
@@ -33,7 +33,7 @@ export async function getProdutosMaisVendidos(limit = 8): Promise<ProdutoLoja[]>
     .select("produto_id, quantidade")
     .in("pedido_id", pedidoIds);
 
-  if (!itens?.length) return await getProdutosMaisVendidosFallback(limit);
+  if (!itens?.length) return getProdutosMaisVendidosFallback(limit);
 
   const totalPorProduto = new Map<string, number>();
   for (const row of itens as { produto_id: string; quantidade: number }[]) {
@@ -44,7 +44,7 @@ export async function getProdutosMaisVendidos(limit = 8): Promise<ProdutoLoja[]>
     .slice(0, limit)
     .map(([id]) => id);
 
-  if (idsOrdenados.length === 0) return await getProdutosMaisVendidosFallback(limit);
+  if (idsOrdenados.length === 0) return getProdutosMaisVendidosFallback(limit);
 
   const { data: produtos, error } = await supabase
     .from("produtos_loja")
@@ -52,20 +52,20 @@ export async function getProdutosMaisVendidos(limit = 8): Promise<ProdutoLoja[]>
     .in("id", idsOrdenados)
     .is("deletado_em", null);
 
-  if (error || !produtos?.length) return await getProdutosMaisVendidosFallback(limit);
+  if (error || !produtos?.length) return getProdutosMaisVendidosFallback(limit);
 
   const porId = new Map((produtos as ProdutoLoja[]).map((p) => [p.id!, p]));
   return idsOrdenados.map((id) => porId.get(id)).filter(Boolean) as ProdutoLoja[];
 }
 
-async function getProdutosMaisVendidosFallback(limit: number): Promise<ProdutoLoja[]> {
-  const { data, error } = await supabase
+function getProdutosMaisVendidosFallback(limit: number): Promise<ProdutoLoja[]> {
+  return supabase
     .from("produtos_loja")
     .select("*")
     .is("deletado_em", null)
     .order("created_at", { ascending: false })
-    .limit(limit);
-  return error ? [] : ((data ?? []) as ProdutoLoja[]);
+    .limit(limit)
+    .then(({ data, error }) => (error ? [] : (data ?? []) as ProdutoLoja[]));
 }
 
 /** Produtos em destaque (em_destaque = true) para a seção "Destaques por Categoria". */

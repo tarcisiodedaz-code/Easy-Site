@@ -2,22 +2,16 @@ import Link from "next/link";
 import { StoreHeader } from "@/components/StoreHeader";
 import { StoreFooter } from "@/components/StoreFooter";
 import { FormRedefinirSenha } from "./FormRedefinirSenha";
-import { getLojaConfig } from "@/lib/loja-config";
-import { getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
 
 export const metadata = {
   title: "Redefinir senha | Easy Games",
   description: "Digite sua nova senha.",
 };
 
-export default async function RedefinirSenhaPage() {
-  const [logoMarca, categoriasMenu] = await Promise.all([
-    getLojaConfig("logo_marca"),
-    getCategoriasProdutoParaMenu(),
-  ]);
+export default function RedefinirSenhaPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <StoreHeader logoUrl={logoMarca?.url ?? null} categoriasMenu={categoriasMenu} />
+      <StoreHeader />
       <main className="mx-auto max-w-md px-4 py-12">
         <h1 className="text-2xl font-bold text-white">Nova senha</h1>
         <p className="mt-1 text-zinc-400">

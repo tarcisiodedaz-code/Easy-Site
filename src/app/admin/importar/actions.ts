@@ -76,95 +76,11 @@ export async function buscarOfertas(
   return { ok: true, ofertas, ignoradosPorFiltro };
 }
 
-// Sufixos que DEVEM atualizar o produto base (mesma edição)
-const SUFIXOS_ATUALIZAR = [
-  "deluxe",
-  "deluxe edition",
-  "standard",
-  "standard edition",
-];
-
-// Sufixos que NÃO devem atualizar (criar como novo produto)
-const SUFIXOS_CRIAR_NOVO = [
-  "ultimate",
-  "ultimate edition",
-  "gold",
-  "gold edition",
-  "collector",
-  "collector edition",
-  "collector's edition",
-  "goty",
-  "game of the year",
-  "game of the year edition",
-  "complete",
-  "complete edition",
-  "definitive",
-  "definitive edition",
-  "premium",
-  "premium edition",
-  "legendary",
-  "legendary edition",
-  "special",
-  "special edition",
-  "limited",
-  "limited edition",
-  "enhanced",
-  "enhanced edition",
-  "remastered",
-  "digital deluxe",
-  "digital deluxe edition",
-];
-
-/**
- * Remove sufixos de edição do nome para obter o nome base do jogo.
- */
-function obterNomeBase(nome: string): string {
-  let nomeBase = nome.trim();
-  const nomeLower = nomeBase.toLowerCase();
-  
-  // Remove sufixos conhecidos (do mais longo para o mais curto)
-  const todosSufixos = [...SUFIXOS_ATUALIZAR, ...SUFIXOS_CRIAR_NOVO]
-    .sort((a, b) => b.length - a.length);
-  
-  for (const sufixo of todosSufixos) {
-    const regex = new RegExp(`\\s*[-–—:]?\\s*${sufixo}\\s*$`, "i");
-    if (regex.test(nomeLower)) {
-      nomeBase = nomeBase.replace(regex, "").trim();
-      break;
-    }
-  }
-  
-  return nomeBase;
-}
-
-/**
- * Verifica se o nome contém um sufixo que deve CRIAR novo produto.
- */
-function temSufixoCriarNovo(nome: string): boolean {
-  const nomeLower = nome.toLowerCase();
-  return SUFIXOS_CRIAR_NOVO.some((sufixo) => {
-    const regex = new RegExp(`\\s*[-–—:]?\\s*${sufixo}\\s*$`, "i");
-    return regex.test(nomeLower);
-  });
-}
-
-/**
- * Verifica se o nome contém um sufixo que deve ATUALIZAR produto existente.
- */
-function temSufixoAtualizar(nome: string): boolean {
-  const nomeLower = nome.toLowerCase();
-  return SUFIXOS_ATUALIZAR.some((sufixo) => {
-    const regex = new RegExp(`\\s*[-–—:]?\\s*${sufixo}\\s*$`, "i");
-    return regex.test(nomeLower);
-  });
-}
-
 async function buscarProdutoExistente(
   supabase: ReturnType<typeof createAdminClient>,
   idExterno: string,
   nome: string
 ): Promise<{ id: string } | null> {
-  // 1. Busca por ID externo (sempre tem prioridade)
   const { data: porId } = await supabase
     .from("produtos_loja")
     .select("id")
@@ -172,37 +88,13 @@ async function buscarProdutoExistente(
     .is("deletado_em", null)
     .maybeSingle();
   if (porId) return porId;
-  
-  // 2. Busca por nome EXATO
-  const { data: porNomeExato } = await supabase
+  const { data: porNome } = await supabase
     .from("produtos_loja")
     .select("id")
     .eq("nome", nome)
     .is("deletado_em", null)
     .maybeSingle();
-  if (porNomeExato) return porNomeExato;
-  
-  // 3. Se tem sufixo de CRIAR NOVO (Ultimate, Gold, etc.), não busca por nome base
-  //    Deixa criar como produto novo
-  if (temSufixoCriarNovo(nome)) {
-    return null;
-  }
-  
-  // 4. Se tem sufixo de ATUALIZAR (Deluxe, Standard), busca pelo nome base
-  if (temSufixoAtualizar(nome)) {
-    const nomeBase = obterNomeBase(nome);
-    if (nomeBase !== nome) {
-      const { data: porNomeBase } = await supabase
-        .from("produtos_loja")
-        .select("id")
-        .eq("nome", nomeBase)
-        .is("deletado_em", null)
-        .maybeSingle();
-      if (porNomeBase) return porNomeBase;
-    }
-  }
-  
-  return null;
+  return porNome;
 }
 
 async function obterMelhorImagem(nome: string, urlOferta: string | null): Promise<string | null> {
