@@ -114,7 +114,7 @@ export async function getProdutosParaAdmin(): Promise<ProdutoAdminRow[]> {
 
   const allCatIds = new Set<string>();
   (produtos as { id: string; categoria_id?: string; subcategoria_id?: string }[]).forEach((p) => {
-    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean);
+    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter((x): x is string => typeof x === "string");
     ids.forEach((id) => allCatIds.add(id));
   });
   const ids = Array.from(allCatIds);
@@ -124,7 +124,7 @@ export async function getProdutosParaAdmin(): Promise<ProdutoAdminRow[]> {
     const { data: cats } = await supabase.from("categorias_produto").select("id, nome, parent_id").in("id", ids);
     const catList = (cats ?? []) as { id: string; nome: string; parent_id: string | null }[];
     catMap = Object.fromEntries(catList.map((c) => [c.id, { nome: c.nome, parent_id: c.parent_id }]));
-    const parentIds = [...new Set(catList.map((c) => c.parent_id).filter(Boolean))] as string[];
+    const parentIds = [...new Set(catList.map((c) => c.parent_id).filter((x): x is string => typeof x === "string"))];
     if (parentIds.length > 0) {
       const { data: parents } = await supabase.from("categorias_produto").select("id, nome").in("id", parentIds);
       parentMap = Object.fromEntries(((parents ?? []) as { id: string; nome: string }[]).map((c) => [c.id, c.nome]));
@@ -132,7 +132,7 @@ export async function getProdutosParaAdmin(): Promise<ProdutoAdminRow[]> {
   }
 
   const rows = (produtos as (ProdutoAdminRow & { pendente_info?: boolean })[]).map((p) => {
-    const catIds = catIdsByProduto.get(p.id!) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean) as string[];
+    const catIds = catIdsByProduto.get(p.id!) ?? [p.categoria_id, p.subcategoria_id].filter((x): x is string => typeof x === "string") as string[];
     const categoria_nome = labelCategoriasParaListagem(catIds, catMap, parentMap);
     return {
       ...p,
@@ -169,7 +169,7 @@ export async function getProdutosLixeira(): Promise<ProdutoAdminRow[]> {
   }
   const allCatIds = new Set<string>();
   (produtos as { id: string; categoria_id?: string; subcategoria_id?: string }[]).forEach((p) => {
-    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean);
+    const ids = catIdsByProduto.get(p.id) ?? [p.categoria_id, p.subcategoria_id].filter((x): x is string => typeof x === "string");
     ids.forEach((id) => allCatIds.add(id));
   });
   const ids = Array.from(allCatIds);
@@ -179,14 +179,14 @@ export async function getProdutosLixeira(): Promise<ProdutoAdminRow[]> {
     const { data: cats } = await supabase.from("categorias_produto").select("id, nome, parent_id").in("id", ids);
     const catList = (cats ?? []) as { id: string; nome: string; parent_id: string | null }[];
     catMap = Object.fromEntries(catList.map((c) => [c.id, { nome: c.nome, parent_id: c.parent_id }]));
-    const parentIds = [...new Set(catList.map((c) => c.parent_id).filter(Boolean))] as string[];
+    const parentIds = [...new Set(catList.map((c) => c.parent_id).filter((x): x is string => typeof x === "string"))];
     if (parentIds.length > 0) {
       const { data: parents } = await supabase.from("categorias_produto").select("id, nome").in("id", parentIds);
       parentMap = Object.fromEntries(((parents ?? []) as { id: string; nome: string }[]).map((c) => [c.id, c.nome]));
     }
   }
   return (produtos as ProdutoAdminRow[]).map((p) => {
-    const catIds = catIdsByProduto.get(p.id!) ?? [p.categoria_id, p.subcategoria_id].filter(Boolean) as string[];
+    const catIds = catIdsByProduto.get(p.id!) ?? [p.categoria_id, p.subcategoria_id].filter((x): x is string => typeof x === "string") as string[];
     const categoria_nome = labelCategoriasParaListagem(catIds, catMap, parentMap);
     return { ...p, categoria_nome, subcategoria_nome: null };
   });
