@@ -31,7 +31,7 @@ export function GraficoPedidos({ dados }: Props) {
               color: "#fafafa",
             }}
             labelStyle={{ color: "#a1a1aa" }}
-            formatter={(value: unknown) => [value ?? 0, "Pedidos"]}
+            formatter={(value) => [typeof value === "number" ? value : 0, "Pedidos"]}
             labelFormatter={(label) => `Dia: ${label}`}
           />
           <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} name="Pedidos" />
