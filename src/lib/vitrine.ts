@@ -58,14 +58,14 @@ export async function getProdutosMaisVendidos(limit = 8): Promise<ProdutoLoja[]>
   return idsOrdenados.map((id) => porId.get(id)).filter(Boolean) as ProdutoLoja[];
 }
 
-function getProdutosMaisVendidosFallback(limit: number): Promise<ProdutoLoja[]> {
-  return supabase
+async function getProdutosMaisVendidosFallback(limit: number): Promise<ProdutoLoja[]> {
+  const { data, error } = await supabase
     .from("produtos_loja")
     .select("*")
     .is("deletado_em", null)
     .order("created_at", { ascending: false })
-    .limit(limit)
-    .then(({ data, error }) => (error ? [] : (data ?? []) as ProdutoLoja[]));
+    .limit(limit);
+  return error ? [] : (data ?? []) as ProdutoLoja[];
 }
 
 /** Produtos em destaque (em_destaque = true) para a seção "Destaques por Categoria". */
