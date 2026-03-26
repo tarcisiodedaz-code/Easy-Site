@@ -28,7 +28,6 @@ type EstoqueAgrupado = {
   qtd_total: number;
   slots: {
     slot_id: string;
-    child_account_id: string;
     console: string | null;
     tipo: string | null;
     custo_vaga: number | null;

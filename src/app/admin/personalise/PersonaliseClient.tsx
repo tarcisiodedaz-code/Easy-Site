@@ -6,7 +6,7 @@ import { salvarPersonalise } from "./actions";
 type Props = {
   logoUrl: string | null;
   faviconUrl: string | null;
-  iconeMercadoPagoUrl: string | null;
+  iconePagBankUrl: string | null;
   iconePixUrl: string | null;
   iconePS4Url: string | null;
   iconePS5Url: string | null;
@@ -17,10 +17,10 @@ const FAVICON_DIMENSOES = "32 × 32 px (ICO ou PNG)";
 const ICONE_PAGAMENTO_DIMENSOES = "64 × 64 px (PNG com fundo transparente)";
 const ICONE_CONSOLE_DIMENSOES = "64 × 64 px (PNG com fundo transparente)";
 
-export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, iconePixUrl, iconePS4Url, iconePS5Url }: Props) {
+export function PersonaliseClient({ logoUrl, faviconUrl, iconePagBankUrl, iconePixUrl, iconePS4Url, iconePS5Url }: Props) {
   const [logo, setLogo] = useState<string | null>(logoUrl);
   const [favicon, setFavicon] = useState<string | null>(faviconUrl);
-  const [iconeMercadoPago, setIconeMercadoPago] = useState<string | null>(iconeMercadoPagoUrl);
+  const [iconePagBank, setIconePagBank] = useState<string | null>(iconePagBankUrl);
   const [iconePix, setIconePix] = useState<string | null>(iconePixUrl);
   const [iconePS4, setIconePS4] = useState<string | null>(iconePS4Url);
   const [iconePS5, setIconePS5] = useState<string | null>(iconePS5Url);
@@ -28,7 +28,7 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
   const [msg, setMsg] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
-  const mercadoPagoInputRef = useRef<HTMLInputElement>(null);
+  const pagbankInputRef = useRef<HTMLInputElement>(null);
   const pixInputRef = useRef<HTMLInputElement>(null);
   const ps4InputRef = useRef<HTMLInputElement>(null);
   const ps5InputRef = useRef<HTMLInputElement>(null);
@@ -69,14 +69,14 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
     }
   }
 
-  async function handleMercadoPagoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePagBankChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setMsg(null);
     try {
       const url = await uploadFile(file, "icones-pagamento");
-      if (url) setIconeMercadoPago(url);
+      if (url) setIconePagBank(url);
     } catch (err) {
       setMsg({ tipo: "erro", texto: err instanceof Error ? err.message : "Erro no upload" });
     }
@@ -125,7 +125,7 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
     setSaving(true);
     setMsg(null);
     try {
-      const res = await salvarPersonalise(logo, favicon, iconeMercadoPago, iconePix, iconePS4, iconePS5);
+      const res = await salvarPersonalise(logo, favicon, iconePagBank, iconePix, iconePS4, iconePS5);
       if (res.ok) {
         setMsg({ tipo: "ok", texto: "Configuração salva. Atualize a loja para ver as alterações." });
       } else {
@@ -266,27 +266,22 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
           Ícones exibidos na página de produto, ao lado dos métodos de pagamento.
         </p>
 
-        {/* Ícone Mercado Pago */}
+        {/* Ícone PagBank */}
         <div className="mb-8">
-          <h3 className="text-base font-medium text-white">Ícone Mercado Pago</h3>
-          <p className="mt-0.5 text-sm text-zinc-400">
-            Exibido ao lado de &quot;Cartão via Mercado Pago&quot; na página de produto.
-          </p>
-          <div className="mt-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 px-4 py-3">
-            <p className="text-sm font-medium text-cyan-200">Dimensões recomendadas</p>
-            <p className="mt-1 text-lg font-bold text-cyan-100">{ICONE_PAGAMENTO_DIMENSOES}</p>
-            <p className="mt-1 text-xs text-cyan-200/90">
-              Use o logo oficial do Mercado Pago. PNG com fundo transparente funciona melhor.
-              Baixe em: <a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/additional-content/media-kit" target="_blank" rel="noopener noreferrer" className="underline">Media Kit Mercado Pago</a>
-            </p>
+          <h3 className="text-base font-medium text-white">Ícone PagBank</h3>
+          <p className="mt-0.5 text-sm text-zinc-400">Exibido ao lado de &quot;Cartão via PagBank&quot; na página de produto.</p>
+          <div className="mt-3 rounded-lg border border-emerald-500/40 bg-emerald-950/30 px-4 py-3">
+            <p className="text-sm font-medium text-emerald-200">Dimensões recomendadas</p>
+            <p className="mt-1 text-lg font-bold text-emerald-100">{ICONE_PAGAMENTO_DIMENSOES}</p>
+            <p className="mt-1 text-xs text-emerald-200/90">PNG com fundo transparente funciona melhor.</p>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            {iconeMercadoPago ? (
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-[#00AEEF]">
-                <img src={iconeMercadoPago} alt="Ícone Mercado Pago" className="h-10 w-10 object-contain" />
+            {iconePagBank ? (
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-600 bg-emerald-500/20">
+                <img src={iconePagBank} alt="Ícone PagBank" className="h-10 w-10 object-contain" />
                 <button
                   type="button"
-                  onClick={() => setIconeMercadoPago(null)}
+                  onClick={() => setIconePagBank(null)}
                   className="absolute -right-1 -top-1 rounded-full bg-red-600/90 p-0.5 text-white hover:bg-red-600"
                   title="Remover ícone"
                 >
@@ -296,23 +291,23 @@ export function PersonaliseClient({ logoUrl, faviconUrl, iconeMercadoPagoUrl, ic
                 </button>
               </div>
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-[#00AEEF]/20">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-zinc-600 bg-emerald-500/10">
                 <span className="text-xs text-zinc-500">64×64</span>
               </div>
             )}
             <input
-              ref={mercadoPagoInputRef}
+              ref={pagbankInputRef}
               type="file"
               accept="image/png,image/svg+xml,image/webp"
-              onChange={handleMercadoPagoChange}
+              onChange={handlePagBankChange}
               className="hidden"
             />
             <button
               type="button"
-              onClick={() => mercadoPagoInputRef.current?.click()}
+              onClick={() => pagbankInputRef.current?.click()}
               className="rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600"
             >
-              {iconeMercadoPago ? "Trocar ícone" : "Enviar ícone"}
+              {iconePagBank ? "Trocar ícone" : "Enviar ícone"}
             </button>
           </div>
         </div>

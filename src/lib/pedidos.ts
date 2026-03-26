@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 export type SituacaoPedido = "pendente" | "pago" | "entregue" | "cancelado" | "rejeitado";
-export type FormaPagamento = "mercado_pago" | "pix";
+export type FormaPagamento = "pix";
 
 export type Pedido = {
   id: string;

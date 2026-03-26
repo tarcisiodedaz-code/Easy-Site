@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 
+/** Resposta pública: só o necessário para precificação/quantidade — sem email, IDs de conta ou dados de cliente. */
 export type EstoqueAgrupado = {
   jogo_id: string;
   game_name: string;
@@ -12,7 +13,6 @@ export type EstoqueAgrupado = {
   qtd_total: number;
   slots: {
     slot_id: string;
-    child_account_id: string;
     console: string | null;
     tipo: string | null;
     custo_vaga: number | null;
@@ -25,7 +25,7 @@ export async function GET() {
     
     const { data, error } = await supabase
       .from("estoque")
-      .select("*");
+      .select("slot_id, jogo_id, console, tipo, custo_vaga, game_name");
     
     if (error) {
       console.error("Erro ao buscar estoque:", error);
@@ -61,7 +61,6 @@ export async function GET() {
       const grupo = agrupado.get(jogoId)!;
       grupo.slots.push({
         slot_id: slot.slot_id,
-        child_account_id: slot.child_account_id,
         console: slot.console,
         tipo: slot.tipo,
         custo_vaga: slot.custo_vaga,

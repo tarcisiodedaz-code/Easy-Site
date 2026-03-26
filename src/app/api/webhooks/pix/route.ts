@@ -12,7 +12,7 @@ import { getLojaConfig } from "@/lib/loja-config";
 import { notificarPedidoAprovadoWhatsApp } from "@/lib/whatsapp-notificacao";
 
 /**
- * Webhook para confirmação de Pix (ex.: Mercado Pago Pix ou outro provedor).
+ * Webhook para confirmação de Pix (ex.: provedor externo).
  * Quando o Pix for pago, o provedor chama esta URL. Atualize o pedido para "pago" e dispara entrega.
  * Payload esperado (ajuste conforme seu provedor): { txid, status } ou { payment_id, status }.
  */

@@ -28,14 +28,13 @@ type Step = "form" | "pix_wait" | "card_form" | "success";
 
 type CheckoutContentProps = {
   iconePixUrl?: string | null;
-  iconeMercadoPagoUrl?: string | null;
   initialNome?: string;
   initialEmail?: string;
   initialTelefone?: string;
   initialCpf?: string;
 };
 
-export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome, initialEmail, initialTelefone, initialCpf }: CheckoutContentProps) {
+export function CheckoutContent({ iconePixUrl, initialNome, initialEmail, initialTelefone, initialCpf }: CheckoutContentProps) {
   const { itens, total, clearCart } = useCart();
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,6 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
   const [email, setEmail] = useState(initialEmail ?? "");
   const [cpf, setCpf] = useState(initialCpf ? formatarCPF(initialCpf) : "");
   const [telefone, setTelefone] = useState(initialTelefone ?? "");
-  const [metodo, setMetodo] = useState<"pix" | "card">("pix");
   const [dadosPreenchidosDaConta, setDadosPreenchidosDaConta] = useState(
     Boolean((initialNome ?? "").trim() || (initialEmail ?? "").trim() || (initialTelefone ?? "").trim() || (initialCpf ?? "").trim())
   );
@@ -54,30 +52,7 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
   const [numeroPedido, setNumeroPedido] = useState<number | null>(null);
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
 
-  // Device ID do Mercado Pago (melhora aprovação e pontuação da integração)
-  useEffect(() => {
-    if (typeof document === "undefined" || document.getElementById("mp-security-script")) return;
-    const script = document.createElement("script");
-    script.id = "mp-security-script";
-    script.src = "https://www.mercadopago.com/v2/security.js";
-    script.setAttribute("view", "checkout");
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      const el = document.getElementById("mp-security-script");
-      if (el?.parentNode) el.parentNode.removeChild(el);
-    };
-  }, []);
   const [copiaECola, setCopiaECola] = useState<string | null>(null);
-
-  // Config MP (public key)
-  const [mpPublicKey, setMpPublicKey] = useState("");
-  useEffect(() => {
-    fetch("/api/mercado-pago/config")
-      .then((r) => r.json())
-      .then((d) => setMpPublicKey(d.publicKey || ""))
-      .catch(() => {});
-  }, []);
 
   // Preencher dados do cliente com a conta logada (quando existir sessão)
   useEffect(() => {
@@ -124,8 +99,6 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
 
   const criarPedido = useCallback(
     async (forma: "pix" | "credit_card") => {
-      const deviceId =
-        typeof window !== "undefined" ? (window as Window & { MP_DEVICE_SESSION_ID?: string }).MP_DEVICE_SESSION_ID : undefined;
       const res = await fetch("/api/pedidos/criar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,7 +112,6 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
         })(),
           forma_pagamento: forma,
           itens: itensPayload,
-          ...(deviceId ? { device_id: deviceId } : {}),
         }),
       });
       const data = await res.json();
@@ -149,49 +121,10 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
     [nome, email, cpf, telefone, itensPayload]
   );
 
-  // Polling PIX
-  useEffect(() => {
-    if (step !== "pix_wait" || !pedidoId) return;
-    const t = setInterval(async () => {
-      try {
-        const r = await fetch(`/api/pedidos/${pedidoId}/status`);
-        const d = await r.json();
-        if (d.situacao === "pago") {
-          setStep("success");
-          clearInterval(t);
-        } else if (d.situacao === "rejeitado") {
-          setErro(d.mensagem ?? "Pagamento recusado.");
-          clearInterval(t);
-        }
-      } catch {
-        // ignore
-      }
-    }, 3000);
-    return () => clearInterval(t);
-  }, [step, pedidoId]);
-
-  async function handlePix() {
-    setErro(null);
-    setLoading(true);
-    try {
-      const data = await criarPedido("pix");
-      setPedidoId(data.pedidoId);
-      setNumeroPedido(data.numero);
-      setQrCodeBase64(data.qr_code_base64 ?? null);
-      setCopiaECola(data.copia_e_cola ?? null);
-      setStep("pix_wait");
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Erro ao gerar PIX.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handlePagBank() {
     setErro(null);
     setLoading(true);
     try {
-      // Criar pedido sem disparar geração de PIX no Mercado Pago
       const data = await criarPedido("credit_card");
       const res = await fetch("/api/pagbank/checkout", {
         method: "POST",
@@ -212,38 +145,6 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
       window.location.href = String(d.pay_url);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao iniciar PagBank.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleCartao(token: string, installments: number) {
-    setErro(null);
-    setLoading(true);
-    try {
-      const data = await criarPedido("credit_card");
-      const deviceId =
-        typeof window !== "undefined" ? (window as Window & { MP_DEVICE_SESSION_ID?: string }).MP_DEVICE_SESSION_ID : undefined;
-      const res = await fetch("/api/pagamentos/cartao", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pedidoId: data.pedidoId,
-          token,
-          installments,
-          payer_nome: nome.trim(),
-          ...(deviceId ? { device_id: deviceId } : {}),
-        }),
-      });
-      const result = await res.json();
-      if (result.ok && result.status === "approved") {
-        setNumeroPedido(result.numero);
-        setStep("success");
-      } else {
-        setErro(result.erro || "Pagamento recusado. Tente outro cartão.");
-      }
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Erro ao processar cartão.");
     } finally {
       setLoading(false);
     }
@@ -293,73 +194,24 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
   if (step === "pix_wait") {
     return (
       <div className="mx-auto max-w-lg px-4 py-8">
-        <h1 className="text-xl font-bold text-white">Pague com PIX</h1>
-        <p className="mt-1 text-zinc-400">Escaneie o QR Code ou copie o código.</p>
+        <h1 className="text-xl font-bold text-white">Pagamento</h1>
+        <p className="mt-1 text-zinc-400">
+          Pedido <span className="font-semibold text-white">#{numeroPedido}</span> criado.
+        </p>
         {erro && (
           <p className="mt-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300">{erro}</p>
         )}
         <div className="mt-6 rounded-xl border border-zinc-700 bg-zinc-800/50 p-6">
-          {qrCodeBase64 && (
-            <div className="flex justify-center">
-              <img
-                src={`data:image/png;base64,${qrCodeBase64}`}
-                alt="QR Code PIX"
-                className="h-48 w-48"
-              />
-            </div>
-          )}
-          {copiaECola && (
-            <div className="mt-4">
-              <label className="block text-sm text-zinc-400">Copia e cola</label>
-              <textarea
-                readOnly
-                value={copiaECola}
-                className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 p-2 text-xs text-zinc-300"
-                rows={4}
-              />
-              <button
-                type="button"
-                onClick={() => navigator.clipboard.writeText(copiaECola)}
-                className="mt-2 rounded bg-zinc-700 px-3 py-1.5 text-sm text-white hover:bg-zinc-600"
-              >
-                Copiar
-              </button>
-            </div>
-          )}
-          <p className="mt-4 text-center text-sm text-zinc-500">
-            Aguardando confirmação do pagamento...
+          <p className="text-sm text-zinc-400">
+            A confirmação do pagamento acontece pela tela segura do PagBank.
           </p>
+          <Link
+            href="/"
+            className="mt-6 inline-block rounded-lg bg-zinc-700 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-600"
+          >
+            Voltar à loja
+          </Link>
         </div>
-      </div>
-    );
-  }
-
-  if (step === "card_form") {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <button
-          type="button"
-          onClick={() => setStep("form")}
-          className="mb-4 text-sm text-zinc-400 hover:text-white"
-        >
-          ← Voltar
-        </button>
-        <h1 className="text-xl font-bold text-white">Cartão de crédito</h1>
-        {erro && (
-          <p className="mt-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300">{erro}</p>
-        )}
-        {mpPublicKey ? (
-          <CheckoutCardForm
-            total={total}
-            nome={nome}
-            cpf={cpf.replace(/\D/g, "")}
-            onSuccess={(token, installments) => handleCartao(token, installments)}
-            onError={(msg) => setErro(msg)}
-            loading={loading}
-          />
-        ) : (
-          <p className="mt-4 text-zinc-500">Mercado Pago não configurado. Use PIX ou configure no admin.</p>
-        )}
       </div>
     );
   }
@@ -451,7 +303,7 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
                   className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-white focus:border-zinc-500 focus:outline-none"
                 />
                 <p className="mt-1 text-xs text-zinc-500">
-                  O CPF é obrigatório para o processamento do pagamento pelo Mercado Pago.
+                  CPF recomendado para melhorar a aprovação no PagBank.
                 </p>
               </div>
               <div className="sm:col-span-2">
@@ -467,69 +319,23 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
             </div>
           </div>
 
-          {/* Forma de Pagamento */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
             <h2 className="mb-5 text-xl font-semibold text-white">Forma de pagamento</h2>
-            <div className="grid grid-cols-2 gap-5">
-              {/* Card PIX */}
-              <button
-                type="button"
-                onClick={() => setMetodo("pix")}
-                className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-5 transition-all duration-200 ${
-                  metodo === "pix"
-                    ? "border-emerald-500 bg-emerald-950/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-                    : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
-                }`}
-              >
-                {metodo === "pix" && (
-                  <span className="absolute -top-2.5 -right-2 rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
-                    SELECIONADO
-                  </span>
-                )}
-                <div className="flex h-14 w-14 items-center justify-center">
-                  {iconePixUrl ? (
-                    <img src={iconePixUrl} alt="PIX" className="h-12 w-12 object-contain" />
-                  ) : (
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${metodo === "pix" ? "bg-emerald-500/20" : "bg-zinc-700"}`}>
-                      <span className={`text-lg font-bold ${metodo === "pix" ? "text-emerald-400" : "text-zinc-400"}`}>PIX</span>
-                    </div>
-                  )}
+            <div className="rounded-xl border border-zinc-700 bg-zinc-800/40 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_18px_rgba(16,185,129,0.18)]">
+                    <span className="text-sm font-extrabold tracking-wide text-emerald-300">PB</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">PagBank</p>
+                    <p className="text-xs text-zinc-400">Pix &amp; Cartão (mesma tela)</p>
+                  </div>
                 </div>
-                <span className={`text-base font-semibold ${metodo === "pix" ? "text-emerald-400" : "text-zinc-300"}`}>
-                  PIX
+                <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                  Seguro • Checkout PagBank
                 </span>
-                <span className="text-xs text-zinc-500">Aprovação imediata</span>
-              </button>
-
-              {/* Card Cartão */}
-              <button
-                type="button"
-                onClick={() => setMetodo("card")}
-                className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-5 transition-all duration-200 ${
-                  metodo === "card"
-                    ? "border-[#00AEEF] bg-[#00AEEF]/10 shadow-[0_0_20px_rgba(0,174,239,0.2)]"
-                    : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600"
-                }`}
-              >
-                {metodo === "card" && (
-                  <span className="absolute -top-2.5 -right-2 rounded-full bg-[#00AEEF] px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
-                    SELECIONADO
-                  </span>
-                )}
-                <div className="flex h-14 w-14 items-center justify-center">
-                  {iconeMercadoPagoUrl ? (
-                    <img src={iconeMercadoPagoUrl} alt="Mercado Pago" className="h-12 w-12 object-contain" />
-                  ) : (
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${metodo === "card" ? "bg-[#00AEEF]/20" : "bg-zinc-700"}`}>
-                      <span className={`text-lg font-bold ${metodo === "card" ? "text-[#00AEEF]" : "text-zinc-400"}`}>MP</span>
-                    </div>
-                  )}
-                </div>
-                <span className={`text-base font-semibold ${metodo === "card" ? "text-[#00AEEF]" : "text-zinc-300"}`}>
-                  Cartão de Crédito
-                </span>
-                <span className="text-xs text-zinc-500">Via Mercado Pago</span>
-              </button>
+              </div>
             </div>
 
             {erro && (
@@ -537,47 +343,24 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
             )}
 
             <div className="mt-6">
-              {metodo === "pix" && (
-                <button
-                  type="button"
-                  onClick={handlePix}
-                  disabled={loading || !nome.trim() || !email.trim()}
-                  className="w-full rounded-xl bg-emerald-600 py-3.5 text-lg font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                >
-                  {loading ? "Gerando PIX…" : "Pagar com PIX"}
-                </button>
-              )}
-              {metodo === "card" && (
-                <button
-                  type="button"
-                  onClick={() => setStep("card_form")}
-                  disabled={!nome.trim() || !email.trim()}
-                  className="w-full rounded-xl bg-[#00AEEF] py-3.5 text-lg font-semibold text-white hover:bg-[#0099d4] disabled:opacity-50 transition-colors"
-                >
-                  Pagar com Cartão
-                </button>
-              )}
-
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={handlePagBank}
-                  disabled={loading || !nome.trim() || !email.trim()}
-                  className="relative w-full overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/20 via-emerald-400/10 to-cyan-400/10 py-3.5 text-lg font-semibold text-white shadow-[0_0_28px_rgba(16,185,129,0.18)] transition-all hover:border-emerald-400/60 hover:shadow-[0_0_34px_rgba(16,185,129,0.26)] disabled:opacity-50"
-                >
-                  <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.28),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(34,211,238,0.18),transparent_50%)]" />
-                  <span className="relative flex items-center justify-center gap-2">
-                    {loading ? (
-                      "Iniciando PagBank…"
-                    ) : (
-                      <>
-                        <span>Pagar com PagBank</span>
-                        <span className="text-sm font-semibold text-emerald-200/90">Pix &amp; Cartão</span>
-                      </>
-                    )}
-                  </span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handlePagBank}
+                disabled={loading || !nome.trim() || !email.trim()}
+                className="relative w-full overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/20 via-emerald-400/10 to-cyan-400/10 py-3.5 text-lg font-semibold text-white shadow-[0_0_28px_rgba(16,185,129,0.18)] transition-all hover:border-emerald-400/60 hover:shadow-[0_0_34px_rgba(16,185,129,0.26)] disabled:opacity-50"
+              >
+                <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.28),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(34,211,238,0.18),transparent_50%)]" />
+                <span className="relative flex items-center justify-center gap-2">
+                  {loading ? (
+                    "Iniciando PagBank…"
+                  ) : (
+                    <>
+                      <span>Pagar com PagBank</span>
+                      <span className="text-sm font-semibold text-emerald-200/90">Pix &amp; Cartão</span>
+                    </>
+                  )}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -586,202 +369,3 @@ export function CheckoutContent({ iconePixUrl, iconeMercadoPagoUrl, initialNome,
   );
 }
 
-// Componente que usa o SDK do MP para tokenizar o cartão (CardForm ou createCardToken)
-declare global {
-  interface Window {
-    MercadoPago?: new (key: string, options?: { locale: string }) => {
-      createCardToken: (params: {
-        cardNumber: string;
-        cardholderName: string;
-        cardExpirationMonth: string;
-        cardExpirationYear: string;
-        securityCode: string;
-        identificationType: string;
-        identificationNumber: string;
-      }) => Promise<{ id: string }>;
-    };
-  }
-}
-
-function CheckoutCardForm({
-  total,
-  nome,
-  cpf,
-  onSuccess,
-  onError,
-  loading,
-}: {
-  total: number;
-  nome: string;
-  cpf: string;
-  onSuccess: (token: string, installments: number) => void;
-  onError: (msg: string) => void;
-  loading: boolean;
-}) {
-  const [scriptOk, setScriptOk] = useState(false);
-  const [publicKey, setPublicKey] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName] = useState(nome);
-  const [expMonth, setExpMonth] = useState("");
-  const [expYear, setExpYear] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [installments, setInstallments] = useState(1);
-  const [tokenizing, setTokenizing] = useState(false);
-
-  useEffect(() => {
-    setCardName(nome);
-  }, [nome]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/mercado-pago/config")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled && d.publicKey) {
-          setPublicKey(d.publicKey);
-          if (window.MercadoPago) {
-            setScriptOk(true);
-            return;
-          }
-          const script = document.createElement("script");
-          script.src = "https://sdk.mercadopago.com/js/v2";
-          script.async = true;
-          script.onload = () => setScriptOk(true);
-          document.body.appendChild(script);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!publicKey || !window.MercadoPago) {
-      onError("SDK do Mercado Pago não carregado.");
-      return;
-    }
-    
-    setTokenizing(true);
-    
-    try {
-      const mp = new window.MercadoPago(publicKey, { locale: "pt-BR" });
-      const [month, year] = expMonth.split("/").map((s) => s.trim());
-      const yearFull = year?.length === 2 ? `20${year}` : (year || "2030");
-      const cardNum = cardNumber.replace(/\D/g, "");
-      const cpfNum = cpf.replace(/\D/g, "") || "12345678909";
-      
-      const result = await mp.createCardToken({
-        cardNumber: cardNum,
-        cardholderName: cardName.toUpperCase(),
-        cardExpirationMonth: month || "11",
-        cardExpirationYear: yearFull,
-        securityCode: cvv.replace(/\D/g, ""),
-        identificationType: "CPF",
-        identificationNumber: cpfNum,
-      });
-      
-      if (result?.id) {
-        onSuccess(result.id, installments);
-      } else {
-        onError("Não foi possível tokenizar o cartão. Verifique os dados.");
-      }
-    } catch (err: unknown) {
-      console.error("Erro ao gerar token:", err);
-      const errorObj = err as { message?: string; cause?: Array<{ code?: string; description?: string }> };
-      const cause = errorObj?.cause?.[0];
-      if (cause?.code) {
-        const errorMessages: Record<string, string> = {
-          "bin_not_found": "Cartão não reconhecido. Use um cartão válido ou de teste do Mercado Pago.",
-          "invalid_card_number": "Número do cartão inválido.",
-          "invalid_expiration_date": "Data de validade inválida.",
-          "invalid_security_code": "CVV inválido.",
-          "invalid_cardholder_name": "Nome do titular inválido.",
-        };
-        onError(errorMessages[cause.code] || cause.description || `Erro: ${cause.code}`);
-      } else {
-        onError(errorObj?.message || "Erro ao processar cartão.");
-      }
-    } finally {
-      setTokenizing(false);
-    }
-  }
-
-  const maxParcelas = total >= 100 ? 12 : total >= 50 ? 6 : 3;
-  const parcelasOpcoes = Array.from({ length: maxParcelas }, (_, i) => i + 1);
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-xl border border-zinc-700 bg-zinc-800/50 p-6">
-      <div>
-        <label className="mb-1 block text-sm text-zinc-400">Número do cartão</label>
-        <input
-          type="text"
-          autoComplete="cc-number"
-          value={cardNumber}
-          onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})/g, "$1 ").trim())}
-          placeholder="0000 0000 0000 0000"
-          maxLength={19}
-          className="w-full rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-white"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm text-zinc-400">Nome no cartão</label>
-        <input
-          type="text"
-          autoComplete="cc-name"
-          value={cardName}
-          onChange={(e) => setCardName(e.target.value)}
-          className="w-full rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-white"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="mb-1 block text-sm text-zinc-400">Validade (MM/AA)</label>
-          <input
-            type="text"
-            autoComplete="cc-exp"
-            value={expMonth}
-            onChange={(e) => setExpMonth(e.target.value.replace(/\D/g, "").slice(0, 4).replace(/^(\d{2})(\d)/, "$1/$2"))}
-            placeholder="MM/AA"
-            maxLength={5}
-            className="w-full rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-white"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm text-zinc-400">CVV</label>
-          <input
-            type="text"
-            autoComplete="cc-csc"
-            value={cvv}
-            onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder="123"
-            maxLength={4}
-            className="w-full rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-white"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="mb-1 block text-sm text-zinc-400">Parcelas</label>
-        <select
-          value={installments}
-          onChange={(e) => setInstallments(Number(e.target.value))}
-          className="w-full rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-white"
-        >
-          {parcelasOpcoes.map((n) => (
-            <option key={n} value={n}>
-              {n}x de {formatBRL(total / n)} {n > 1 ? "sem juros" : ""}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button
-        type="submit"
-        disabled={loading || tokenizing || !scriptOk}
-        className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-      >
-        {tokenizing ? "Validando cartão…" : loading ? "Processando pagamento…" : "Pagar"}
-      </button>
-    </form>
-  );
-}

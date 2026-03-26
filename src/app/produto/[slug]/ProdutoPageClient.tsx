@@ -16,8 +16,7 @@ type Props = {
   imagemUrl: string;
   informacoesAdicionaisHtml: string;
   descricaoHtml: string;
-  taxaCartaoInicial?: number;
-  iconeMercadoPagoInicial?: string | null;
+  iconePagBankInicial?: string | null;
   iconePixInicial?: string | null;
   iconePS4Inicial?: string | null;
   iconePS5Inicial?: string | null;
@@ -44,8 +43,7 @@ export function ProdutoPageClient({
   imagemUrl,
   informacoesAdicionaisHtml,
   descricaoHtml,
-  taxaCartaoInicial = 5,
-  iconeMercadoPagoInicial = null,
+  iconePagBankInicial = null,
   iconePixInicial = null,
   iconePS4Inicial = null,
   iconePS5Inicial = null,
@@ -56,8 +54,7 @@ export function ProdutoPageClient({
   const [adicionado, setAdicionado] = useState(false);
   const [mostrarParcelas, setMostrarParcelas] = useState(false);
 
-  const taxaCartao = taxaCartaoInicial;
-  const iconeMercadoPago = iconeMercadoPagoInicial;
+  const iconePagBank = iconePagBankInicial;
   const iconePix = iconePixInicial;
   const iconePS4 = iconePS4Inicial;
   const iconePS5 = iconePS5Inicial;
@@ -86,8 +83,7 @@ export function ProdutoPageClient({
       ? Math.round(((baseNum - precoExibir) / baseNum) * 100)
       : 0;
 
-  const precoComTaxa = precoExibir + (precoExibir * taxaCartao / 100);
-  const parcela = precoExibir > 0 ? calcularParcela(precoExibir, taxaCartao) : 0;
+  const parcela = precoExibir > 0 ? calcularParcela(precoExibir, 0) : 0;
   const precoFormatado = formatBRL(precoExibir);
   const whatsappMsg = `Olá! Gostaria de comprar: ${produto.nome} (${versaoSelecionada?.toUpperCase() || "PS5"}) - ${precoFormatado}`;
 
@@ -162,21 +158,16 @@ export function ProdutoPageClient({
 
           {/* Métodos de pagamento */}
           <div className="mt-6 space-y-4">
-            {/* Mercado Pago Card */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-4">
-                {iconeMercadoPago ? (
-                  <img
-                    src={iconeMercadoPago}
-                    alt="Mercado Pago"
-                    className="h-10 w-10 shrink-0 object-contain"
-                  />
+                {iconePagBank ? (
+                  <img src={iconePagBank} alt="PagBank" className="h-10 w-10 shrink-0 object-contain" />
                 ) : (
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#00AEEF]">
-                    <span className="text-[10px] font-bold text-white">MP</span>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20">
+                    <span className="text-[10px] font-bold text-emerald-300">PB</span>
                   </div>
                 )}
-                <span className="text-sm font-medium text-white">Cartão via Mercado Pago</span>
+                <span className="text-sm font-medium text-white">Cartão via PagBank</span>
               </div>
               {versaoSelecionada && precoExibir > 0 && (
                 <button
@@ -189,7 +180,7 @@ export function ProdutoPageClient({
               )}
               {versaoSelecionada && mostrarParcelas && precoExibir > 0 && (
                 <div className="w-full rounded-lg bg-zinc-800/80 px-3 py-2 text-xs text-zinc-300">
-                  12x de {formatBRL(parcela)} (com juros conforme taxa do site)
+                  12x de {formatBRL(parcela)}
                 </div>
               )}
             </div>

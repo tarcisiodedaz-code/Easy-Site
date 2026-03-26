@@ -172,29 +172,7 @@ export function ListaPedidosAdmin({
             {SITUACAO_LABEL[s]}
           </Link>
         ))}
-        <span className="ml-4 text-sm text-zinc-500">Pagamento:</span>
-        <Link
-          href={buildUrl({
-            forma_pagamento: filtroFormaPagamento === "mercado_pago" ? undefined : "mercado_pago",
-            pagina: 1,
-          })}
-          className={`rounded-lg px-3 py-1.5 text-sm ${
-            filtroFormaPagamento === "mercado_pago" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          Mercado Pago
-        </Link>
-        <Link
-          href={buildUrl({
-            forma_pagamento: filtroFormaPagamento === "pix" ? undefined : "pix",
-            pagina: 1,
-          })}
-          className={`rounded-lg px-3 py-1.5 text-sm ${
-            filtroFormaPagamento === "pix" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
-          }`}
-        >
-          Pix
-        </Link>
+        <span className="ml-4 text-sm text-zinc-500">Pagamento: PagBank</span>
       </div>
 
       <div className="mb-4 flex items-center justify-between text-sm text-zinc-500">
@@ -280,9 +258,7 @@ export function ListaPedidosAdmin({
                   <td className="p-4 text-zinc-300">{formatarData(p.created_at)}</td>
                   <td className="p-4 text-zinc-300">{p.cliente_nome}</td>
                   <td className="p-4">
-                    <span className={p.forma_pagamento === "pix" ? "text-emerald-400" : "text-blue-400"}>
-                      {p.forma_pagamento === "pix" ? "Pix" : "Mercado Pago"}
-                    </span>
+                    <span className="text-emerald-400">PagBank</span>
                   </td>
                   <td className="p-4 text-zinc-500">Recebimento por e-mail</td>
                   <td className="p-4">

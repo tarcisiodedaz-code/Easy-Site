@@ -140,7 +140,7 @@ export async function StoreFooter() {
               </li>
             </ul>
             <p className="mt-3 text-xs text-zinc-500">
-              Pagamento 100% seguro via Mercado Pago.
+              Pagamento 100% seguro via PagBank.
             </p>
             {/* Ícones de pagamento */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -155,10 +155,6 @@ export async function StoreFooter() {
               {/* MASTERCARD */}
               <div className="flex h-8 items-center justify-center rounded bg-white px-2">
                 <span className="text-[10px] font-bold text-orange-600">MASTER</span>
-              </div>
-              {/* MERCADO PAGO */}
-              <div className="flex h-8 items-center justify-center rounded bg-[#00b1ea] px-2">
-                <span className="text-[10px] font-bold text-white">Mercado Pago</span>
               </div>
             </div>
           </div>

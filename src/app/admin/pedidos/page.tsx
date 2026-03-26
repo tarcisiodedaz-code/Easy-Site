@@ -11,7 +11,7 @@ export default async function AdminPedidosPage({
 }) {
   const params = await searchParams;
   const situacao = params.situacao as "pendente" | "pago" | "cancelado" | "entregue" | undefined;
-  const forma_pagamento = params.forma_pagamento as "mercado_pago" | "pix" | undefined;
+  const forma_pagamento = params.forma_pagamento as "pix" | undefined;
   const pagina = params.pagina ? Number(params.pagina) : 1;
 
   const { pedidos, total, paginas } = await getPedidos({

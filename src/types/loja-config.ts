@@ -13,8 +13,8 @@ export type NavPlatformItem = { label: string; href: string; icon: string };
 export type LogoMarcaConfig = { url: string } | null;
 export type FaviconConfig = { url: string } | null;
 
-/** Ícone do Mercado Pago exibido na página de produto. Dimensões: 64×64 px */
-export type IconeMercadoPagoConfig = { url: string } | null;
+/** Ícone do PagBank exibido na página de produto. Dimensões: 64×64 px */
+export type IconePagBankConfig = { url: string } | null;
 /** Ícone do Pix exibido na página de produto. Dimensões: 64×64 px */
 export type IconePixConfig = { url: string } | null;
 /** Ícone do PS4 exibido no seletor de console. Dimensões: 64×64 px */
@@ -57,15 +57,6 @@ export type WhatsappNotificacaoConfig = {
   apikey: string;
 } | null;
 
-/** Configuração do Mercado Pago (Checkout Transparente). Access Token só no servidor. */
-export type MercadoPagoConfig = {
-  publicKey: string;
-  accessToken: string;
-  sandbox: boolean;
-  /** Taxa aplicada ao pagamento com cartão (em %). Padrão: 5% */
-  taxaCartao?: number;
-} | null;
-
 /** Configuração do PagBank (Checkout / Link de Pagamento via redirect). */
 export type PagBankConfig = {
   /** Token de autenticação enviado em `Authorization: Bearer <token>` (iBanking). */
@@ -94,10 +85,8 @@ export type LojaConfigMap = {
   informacoes_adicionais: InformacoesAdicionaisConfig;
   /** Promoção global usada no botão/menu "Ofertas especiais". */
   ofertas_especiais: OfertasEspeciaisConfig;
-  /** Credenciais Mercado Pago (Public Key, Access Token, sandbox). */
-  mercado_pago: MercadoPagoConfig;
-  /** Ícone do Mercado Pago para página de produto */
-  icone_mercado_pago: IconeMercadoPagoConfig;
+  /** Ícone do PagBank para página de produto */
+  icone_pagbank: IconePagBankConfig;
   /** Ícone do Pix para página de produto */
   icone_pix: IconePixConfig;
   /** Ícone do PS4 para seletor de console */
@@ -138,8 +127,7 @@ const DEFAULTS: LojaConfigMap = {
   favicon: null as FaviconConfig,
   informacoes_adicionais: null as InformacoesAdicionaisConfig,
   ofertas_especiais: null,
-  mercado_pago: null as MercadoPagoConfig,
-  icone_mercado_pago: null as IconeMercadoPagoConfig,
+  icone_pagbank: null as IconePagBankConfig,
   icone_pix: null as IconePixConfig,
   icone_ps4: null as IconePS4Config,
   icone_ps5: null as IconePS5Config,

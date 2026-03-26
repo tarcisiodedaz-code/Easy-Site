@@ -6,10 +6,9 @@ import { getCategoriasProdutoParaMenu } from "@/lib/produtos-completo";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CheckoutPage() {
-  const [logoMarca, iconePix, iconeMercadoPago, categoriasMenu, supabase] = await Promise.all([
+  const [logoMarca, iconePix, categoriasMenu, supabase] = await Promise.all([
     getLojaConfig("logo_marca"),
     getLojaConfig("icone_pix"),
-    getLojaConfig("icone_mercado_pago"),
     getCategoriasProdutoParaMenu(),
     createClient(),
   ]);
@@ -28,7 +27,6 @@ export default async function CheckoutPage() {
       <main className="pt-[130px] pb-16 sm:pt-[140px] md:pt-[150px]">
         <CheckoutContent 
           iconePixUrl={iconePix?.url ?? null}
-          iconeMercadoPagoUrl={iconeMercadoPago?.url ?? null}
           initialNome={initialNome}
           initialEmail={initialEmail}
           initialTelefone={initialTelefone}

@@ -28,20 +28,17 @@ export default async function ProdutoSlugPage({ params }: Props) {
   if (!produto) produto = await getProdutoPorId(slug);
   if (!produto) notFound();
 
-  const [categoriaIds, relacionados, informacoesAdicionaisConfig, mercadoPagoConfig, iconeMercadoPago, iconePix, iconePS4, iconePS5, logoMarca, categoriasMenu] = await Promise.all([
+  const [categoriaIds, relacionados, informacoesAdicionaisConfig, iconePagBank, iconePix, iconePS4, iconePS5, logoMarca, categoriasMenu] = await Promise.all([
     getCategoriaIdsDoProduto(produto.id!),
     getCategoriaIdsDoProduto(produto.id!).then((ids) => getProdutosRelacionados(produto!.id!, ids, 4)),
     getLojaConfig("informacoes_adicionais"),
-    getLojaConfig("mercado_pago"),
-    getLojaConfig("icone_mercado_pago"),
+    getLojaConfig("icone_pagbank"),
     getLojaConfig("icone_pix"),
     getLojaConfig("icone_ps4"),
     getLojaConfig("icone_ps5"),
     getLojaConfig("logo_marca"),
     getCategoriasProdutoParaMenu(),
   ]);
-
-  const taxaCartao = mercadoPagoConfig?.taxaCartao ?? 5;
 
   const imagemUrl =
     getImagemAltaResolucao(produto.imagem_url) ||
@@ -72,8 +69,7 @@ export default async function ProdutoSlugPage({ params }: Props) {
           imagemUrl={imagemUrl}
           informacoesAdicionaisHtml={informacoesAdicionaisHtml}
           descricaoHtml={descricaoHtml}
-          taxaCartaoInicial={taxaCartao}
-          iconeMercadoPagoInicial={iconeMercadoPago?.url ?? null}
+          iconePagBankInicial={iconePagBank?.url ?? null}
           iconePixInicial={iconePix?.url ?? null}
           iconePS4Inicial={iconePS4?.url ?? null}
           iconePS5Inicial={iconePS5?.url ?? null}

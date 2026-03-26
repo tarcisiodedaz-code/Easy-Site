@@ -45,7 +45,7 @@ function formatarMensagemPedido(dados: DadosPedidoNotificacao): string {
     `Cliente: ${dados.cliente_nome}`,
     `E-mail: ${dados.cliente_email}`,
     `Telefone: ${tel}`,
-    `Pagamento: ${dados.forma_pagamento === "pix" ? "PIX" : dados.forma_pagamento === "mercado_pago" ? "Cartão/MP" : dados.forma_pagamento}`,
+    `Pagamento: ${dados.forma_pagamento === "pix" ? "PIX" : dados.forma_pagamento}`,
     "",
     "Itens:",
     ...dados.itens.map(
@@ -152,7 +152,7 @@ export async function notificarPedidoWhatsApp(
 
 /**
  * Envia mensagem "Pedido #X aprovado (pago)." para o WhatsApp do lojista.
- * Chamado quando o pagamento é confirmado (webhook PIX ou Mercado Pago).
+ * Chamado quando o pagamento é confirmado (webhook).
  */
 export async function notificarPedidoAprovadoWhatsApp(
   numeroPedido: number,

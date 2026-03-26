@@ -2,10 +2,10 @@ import { getLojaConfig } from "@/lib/loja-config";
 import { PersonaliseClient } from "./PersonaliseClient";
 
 export default async function AdminPersonalisePage() {
-  const [logo_marca, favicon, icone_mercado_pago, icone_pix, icone_ps4, icone_ps5] = await Promise.all([
+  const [logo_marca, favicon, icone_pagbank, icone_pix, icone_ps4, icone_ps5] = await Promise.all([
     getLojaConfig("logo_marca"),
     getLojaConfig("favicon"),
-    getLojaConfig("icone_mercado_pago"),
+    getLojaConfig("icone_pagbank"),
     getLojaConfig("icone_pix"),
     getLojaConfig("icone_ps4"),
     getLojaConfig("icone_ps5"),
@@ -25,7 +25,7 @@ export default async function AdminPersonalisePage() {
       <PersonaliseClient
         logoUrl={logo_marca?.url ?? null}
         faviconUrl={favicon?.url ?? null}
-        iconeMercadoPagoUrl={icone_mercado_pago?.url ?? null}
+        iconePagBankUrl={icone_pagbank?.url ?? null}
         iconePixUrl={icone_pix?.url ?? null}
         iconePS4Url={icone_ps4?.url ?? null}
         iconePS5Url={icone_ps5?.url ?? null}
